@@ -1,0 +1,24 @@
+services:
+  redis:
+    image: redis:8.0-rc1-alpine
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    command: redis-server --requirepass "${REDIS_PASSWORD}"
+    restart: always
+    ports:
+      - "6379:6379"
+
+  db:
+    image: postgres:16.8-alpine3.21
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:
