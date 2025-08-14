@@ -5,15 +5,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi_limiter.depends import RateLimiter
 
 from src.db.database import get_db
-from src.models.users import User
 from src.models.users import Role
 from src.repository import car as repositories_car
 from src.schemas.car import CarResponseSchema, CarUpdateSchema, CarCreationSchema
 from src.services.roles import RoleAccessService
-from src.services.auth import auth_service  
 
 
-only_admin_access = RoleAccessService(Role.admin)
+only_admin_access = RoleAccessService([Role.admin])
 
 cars_router = APIRouter(prefix='/cars', tags=['cars'])
 
