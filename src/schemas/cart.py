@@ -13,7 +13,6 @@ class CartAddItemSchema(BaseModel):
     car_id: UUID
     cart_data: CartData
 
-#TODO: make appropriate to redis
 
 class CartResponseSchema(BaseModel):
     cart_data: list
