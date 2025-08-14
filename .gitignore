@@ -2,6 +2,5 @@
 alembic.ini
 alembic
 logs
-cart.py
 __pycache__
 .git
