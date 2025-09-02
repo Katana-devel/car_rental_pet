@@ -10,10 +10,9 @@ from src.models.users import Role, User, Gender
 from src.core.config import config
 from src.models.users import User
 from src.core.logger.logger import logger
-from src.schemas.cart import CartAddItemSchema, CartResponseSchema
+from src.schemas.cart import CartItem, CartResponseSchema
 from src.repository.user import get_user_by_id
 from src.services.auth import auth_service
-
 
 
 async def get_cart(redis, user_id: UUID = Depends(auth_service.get_current_user)):
@@ -26,27 +25,29 @@ async def get_cart(redis, user_id: UUID = Depends(auth_service.get_current_user)
 
 async def add_to_cart(
         redis,
-    car_data: CartAddItemSchema,
-    user_id: UUID = Depends(auth_service.get_current_user)
-
+        car_id: UUID,
+        options: list[str],
+        duration: int,
+        total_sum : int,
+        user_id: UUID = Depends(auth_service.get_current_user)
 ):
     cart_creation_json = {
-        'car_id': str(car_data.car_id),
-        'price': 100,
-        'cart_data': {
-            'options': car_data.cart_data.options,
-            'duration': car_data.cart_data.duration
-        }
+        'car_id': str(car_id),
+        'total_price': total_sum,
+        'options': options,
+        'duration': duration
     }
+
     await redis.json().set(f"cart_by_user_id:{user_id}", "$", cart_creation_json)
+
     return await redis.json().get(f"cart_by_user_id:{user_id}", "$")
 
 
 
-async def remove_car_from_cart(redis, user_id: UUID = Depends(auth_service.get_current_user)):
+async def delete_cart(redis, user_id: UUID = Depends(auth_service.get_current_user)):
     user_id = str(user_id)
-    delete_cart = await redis.json().delete(f"cart_by_user_id:{user_id}", "$")
-    if delete_cart:
+    delete_cart_ = await redis.json().delete(f"cart_by_user_id:{user_id}", "$")
+    if delete_cart_:
         return True
     return False
 
