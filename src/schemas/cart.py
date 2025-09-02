@@ -13,6 +13,7 @@ class CartItem(BaseModel):
 
 
 class CartResponseSchema(BaseModel):
+
     car_id: UUID
     options: List[OptionsResponseSchema]
     total_price: int
