@@ -6,14 +6,30 @@ from pydantic import BaseModel, Field
 from src.models.cars import CarClass
 
 
-#TODO: Only for admins 
+class OptionsCreationSchema(BaseModel):
+    option_name: str
+    price: int
+
+
+class OptionsResponseSchema(BaseModel):
+    option_name: str
+    price: int
+
+    model_config = {"from_attributes": True}
+
+
+class CarOptionsResponseSchema(BaseModel):
+    options: OptionsResponseSchema
+
+    model_config = {"from_attributes": True}
+
+
 class CarCreationSchema(BaseModel):
     brand: str
     model: Annotated[str, Field(min_length=2, max_length=100)]
-    year: int
+    year: Annotated[int, Field(ge=1886, le=datetime.now().year + 1)]
     car_class: CarClass
     price: int
-    options: Optional[List[str]]
 
 
 class CarResponseSchema(BaseModel):
@@ -22,8 +38,10 @@ class CarResponseSchema(BaseModel):
     model: str
     year: int
     car_class: CarClass
-    price: int 
-    options: Optional[List[str]]
+    price: int
+    options: List[CarOptionsResponseSchema] = Field(default_factory=list)
+
+    model_config = {"from_attributes": True}
 
 
 class CarUpdateSchema(BaseModel):
@@ -32,8 +50,5 @@ class CarUpdateSchema(BaseModel):
     year: Optional[int] = None
     car_class: Optional[CarClass] = None
     price: Optional[int] = None
-    options: Optional[List[str]] = None
 
-
-
-#TODO: create other el (Booking etc)interrelation with User 
+    model_config = {"from_attributes": True}

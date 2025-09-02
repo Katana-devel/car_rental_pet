@@ -10,10 +10,12 @@ from src.db.redis import get_redis
 from src.models.users import Role
 from src.repository import cart as repositories_cart
 from src.repository import car as repositories_car
-from src.schemas.cart import CartResponseSchema, CartAddItemSchema
+from src.schemas.cart import CartResponseSchema, CartItem
 from src.services.auth import auth_service
+from src.services.cart_services import total_sum, selected_options
 from src.services.roles import RoleAccessService
 from src.core.logger.logger import logger
+from src.services import cart_services
 
 all_user_access = RoleAccessService([Role.admin, Role.user])
 
@@ -28,42 +30,52 @@ async def get_cart(user_id: UUID = Depends(auth_service.get_current_user),
     cart = await repositories_cart.get_cart(redis, user_id)
     if cart is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User has no cart")
-    return CartResponseSchema(cart_data=cart, total_sum=150)
+
+    return CartResponseSchema(car_id=cart[0]["car_id"], options=cart[0]["options"], total_price =cart[0]["total_price"], duration=cart[0]["duration"])
 
 
 
 @cart_router.post("/", response_model=CartResponseSchema,
                    dependencies=[Depends(RateLimiter(times=10, seconds=20)), Depends(all_user_access)])
 async def add_to_cart(
-        car_data: CartAddItemSchema,
+        car_data: CartItem,
         user_id: UUID = Depends(auth_service.get_current_user),
         db: AsyncSession = Depends(get_db),
         redis: Redis = Depends(get_redis)
 ):
-    car_id = await repositories_car.get_car(car_data.car_id, db=db)
-    if car_id is None:
+    car = await repositories_car.get_car(car_data.car_id, db=db)
+    if car is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='This car not found')
+
+    options = await selected_options(car_data, db=db)
+    if options is None:
+        options = []
+
+    total_sum_ = await cart_services.total_sum(car_id=car.id, options=options,duration=car_data.duration, db=db)
+
     try:
-        result = await repositories_cart.add_to_cart(redis, car_data, user_id)
+        result = await repositories_cart.add_to_cart(redis, car.id, options,car_data.duration,total_sum_, user_id)
     except Exception as e:
         logger.error(f"500: Can't add car to cart: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-    return CartResponseSchema(cart_data=result,total_sum=150)
+    return CartResponseSchema(car_id=car.id, options=result[0]["options"], total_price = total_sum_, duration=car_data.duration)
 
 
 
 @cart_router.delete("/", dependencies=[Depends(RateLimiter(times=10, seconds=20)), Depends(all_user_access)])
-async def remove_car_from_cart(user_id: UUID = Depends(auth_service.get_current_user),
+async def delete_cart(user_id: UUID = Depends(auth_service.get_current_user),
     redis: Redis = Depends(get_redis)):
 
     if await repositories_cart.get_cart(redis, user_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cart not found")
 
     try:
-        await repositories_cart.remove_car_from_cart(redis, user_id)
+        await repositories_cart.delete_cart(redis, user_id)
     except Exception as e :
         logger.error(f"500:Can't delete the cart: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
     return "Cart successfully deleted"
+
+
