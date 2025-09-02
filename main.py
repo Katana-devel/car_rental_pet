@@ -1,7 +1,6 @@
 #!/bin/env python3
 
 from contextlib import asynccontextmanager
-import time
 from typing import AsyncGenerator
 
 from fastapi import FastAPI
@@ -12,9 +11,9 @@ from src.api.auth.auth import auth_router
 from src.db.redis import redis_manager
 from src.repository.user import create_admin
 from src.db.database import sessionmanager
-from src.core.config import base_config
 from src.api.car.car import cars_router
-from src.api.cart.cart import cart_router
+from src.api.car.cart import cart_router
+from src.api.options.options import options_router
 from src.core.logger.logger import logger
 
 
@@ -61,4 +60,5 @@ app.add_middleware(
 app.include_router(auth_router, prefix="/api")
 app.include_router(cars_router, prefix="/api")
 app.include_router(cart_router, prefix="/api")
+app.include_router(options_router, prefix="/api")
 

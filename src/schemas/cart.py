@@ -1,19 +1,20 @@
 from typing import Annotated, Optional, List
 from uuid import UUID
-from datetime import datetime
+
 from pydantic import BaseModel, Field
 
+from src.schemas.car import OptionsCreationSchema, OptionsResponseSchema
 
 
-class CartData(BaseModel):
-    options: Optional[List[str]] = []
-    duration: int
-
-class CartAddItemSchema(BaseModel):
+class CartItem(BaseModel):
     car_id: UUID
-    cart_data: CartData
+    options: Optional[List[str]] = None
+    duration: int
 
 
 class CartResponseSchema(BaseModel):
-    cart_data: list
-    total_sum: int
+
+    car_id: UUID
+    options: List[OptionsResponseSchema]
+    total_price: int
+    duration : int

@@ -44,5 +44,4 @@ class User(Base):
 
 
     #TODO: Make check if user inputs email -  email column, if number - number column
-    #TODO: Make proper number form (REPO LVL) +380... 
-    #TODO: Later. add service of passport upload 
+    #Make proper number form (REPO LVL) +380...
