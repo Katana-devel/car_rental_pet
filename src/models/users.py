@@ -10,7 +10,6 @@ from src.db.base import Base
 
 
 
-
 class Role(str, enum.Enum):
     user = "user"
     admin = "admin"
@@ -30,18 +29,23 @@ class User(Base):
     )
     full_name: Mapped[str] = mapped_column(String(100), nullable=False)
     password: Mapped[str] = mapped_column(String(100),  nullable=False)
-    gender: Mapped[str] = mapped_column("gender", Enum(Gender), nullable=False)
+    gender: Mapped[str] = mapped_column("gender", Enum(Gender), nullable=True)
     email: Mapped[Optional[EmailStr]] = mapped_column(String(100), nullable=True, unique=True)
     number: Mapped[Optional[str]] = mapped_column(String(25), nullable=True, unique=True)
-    refresh_token: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    age: Mapped[Optional[int]] = mapped_column(nullable=True) #TODO: Verify with passport 
+    age: Mapped[Optional[int]] = mapped_column(nullable=True) #TODO: Verify with passport
+    address: Mapped[str] = mapped_column(String(150), nullable=True)
     role: Mapped[Enum] = mapped_column("role", Enum(Role), nullable=False, default=Role.user)
     refresh_token: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_active: Mapped[bool] = mapped_column(
         Boolean(), default=True, nullable=False, server_default=text("true")
     )
+    booking: Mapped[list["Booking"]] = relationship(
+        "Booking",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
 
 
 
     #TODO: Make check if user inputs email -  email column, if number - number column
-    #Make proper number form (REPO LVL) +380...
+    #Make proper validation form  for number +380...
