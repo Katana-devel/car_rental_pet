@@ -109,14 +109,8 @@ async def delete_car(car_id: uuid.UUID, db: AsyncSession):
 
 async def delete_option_for_car(car: Car, option_id: UUID, db: AsyncSession):
     stmt = select(CarOptions).where(and_(CarOptions.options_id == option_id, CarOptions.car_id == car.id))
-    print("----------------------------------1----------------------")
     option = await db.execute(stmt)
-    print("----------------------------------2----------------------")
     option = option.scalar_one_or_none()
-    print("----------------------------------3----------------------")
-
     if option:
         await db.delete(option)
         await db.commit()
-
-#'list' object has no attribute 'id'

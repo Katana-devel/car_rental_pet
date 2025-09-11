@@ -41,6 +41,11 @@ class Car(Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean(), default=True, nullable=False, server_default=text("true")
     )
+    booking: Mapped[list["Booking"]] = relationship(
+        "Booking",
+        back_populates="car",
+        cascade="all, delete-orphan"
+    )
 
 
 class Options(Base):
@@ -78,5 +83,12 @@ class CarOptions(Base):
         nullable=False
     )
 
-    car: Mapped["Car"] = relationship("Car", back_populates="options")
-    options: Mapped["Options"] = relationship("Options", back_populates="cars")
+    car: Mapped["Car"] = relationship(
+        "Car",
+        back_populates="options"
+    )
+    options: Mapped["Options"] = relationship(
+        "Options",
+        back_populates="cars"
+    )
+

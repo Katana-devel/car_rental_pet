@@ -1,20 +1,18 @@
 import enum
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional
 
 
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import mapped_column, Mapped, relationship
-from sqlalchemy import Boolean, String, Integer, DateTime, ForeignKey, Enum, func, text
-
+from sqlalchemy import Boolean, String, Integer, DateTime, ForeignKey, Enum, func, text, Date
 
 from src.db.base import Base
 
 
 
 class BookingStatus(str, enum.Enum):
-    pending = "pending"
-    booked = "booked"
+    confirmed = "confirmed"
     done = "done"
     canceled = "canceled"
 
@@ -25,8 +23,9 @@ class Booking(Base):
         UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
     )
     status: Mapped[str] = mapped_column("status", Enum(BookingStatus), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-    exp_at: Mapped[datetime] = mapped_column(DateTime)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())  # оставляем datetime
+    start_date: Mapped[date] = mapped_column(Date)
+    end_date: Mapped[date] = mapped_column(Date)
     delivery_address: Mapped[str] = mapped_column(String(150), nullable=True)
     total_price: Mapped[int] = mapped_column(nullable=False)
 

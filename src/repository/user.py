@@ -3,12 +3,13 @@ from uuid import UUID
 from datetime import datetime, timezone
 
 from fastapi import Depends
-from sqlalchemy import delete, select
+from pydantic import EmailStr
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.database import get_db
 from src.models.users import Role, User, Gender
-from src.schemas.user import UserCreationSchema
+from src.schemas.user import UserCreationSchema, UserProfileSchema
 from src.core.config import config
 from src.services.auth import auth_service
 from src.models.users import User
@@ -17,7 +18,7 @@ from src.core.logger.logger import logger
 
 
 
-async def get_user_by_email(email: str, db: AsyncSession = Depends(get_db)):
+async def get_user_by_email(email: EmailStr, db: AsyncSession = Depends(get_db)):
     stmt = select(User).where(User.email == email)
     user = await db.execute(stmt)
     user = user.unique().scalar_one_or_none()
@@ -55,7 +56,7 @@ async def delete_user(email, db: AsyncSession) -> List[User]:
 
 
 
-async def update_user(email: str, update_data: dict, db: AsyncSession) -> User:
+async def update_user(email: EmailStr, update_data: dict, db: AsyncSession) -> User:
     user = await get_user_by_email(email, db=db)
     try:
         if user:
@@ -98,8 +99,35 @@ async def get_user_by_id(user_id: UUID, db: AsyncSession):
     stmt = select(User).where(User.id == user_id)
     user = await db.execute(stmt)
     user = user.unique().scalar_one_or_none()
-    return user 
+    return user
 
+
+async def add_user_profile_data(
+        user_data : UserProfileSchema,
+        user_id: UUID,
+        db: AsyncSession
+    ):
+    stmt = (
+        update(User).where(User.id == user_id).values(
+            email=user_data.email,
+            full_name=user_data.full_name,
+            gender=user_data.gender,
+            age=user_data.age,
+            address=user_data.address,
+            number=user_data.number
+        )
+    )
+    await db.execute(stmt)
+    await db.commit()
+
+    return await get_user_by_id(user_id,db)
+
+
+async def is_number(number: str, db : AsyncSession):
+    stmt = select(User).where(User.number == number)
+    user = await db.execute(stmt)
+    user = user.unique().scalar_one_or_none()
+    return user
 
 
 
