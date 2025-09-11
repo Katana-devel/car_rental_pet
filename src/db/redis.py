@@ -1,6 +1,7 @@
 from redis.asyncio import Redis
 import contextlib
 from src.core.config import config
+from src.core.logger.logger import logger
 
 
 class RedisSessionManager:
@@ -16,7 +17,7 @@ class RedisSessionManager:
         try:
             await self._redis_client.ping()
         except Exception as e:
-            # log.error(f"Ошибка подключения к Redis: {e}")
+            logger.error(f"Ошибка подключения к Redis: {e}")
             print("connection error")
             
     async def close(self):

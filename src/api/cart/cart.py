@@ -1,4 +1,5 @@
 import traceback
+from datetime import date
 from uuid import UUID
 from fastapi import APIRouter, HTTPException, Depends, status
 from redis.asyncio import Redis
@@ -31,7 +32,13 @@ async def get_cart(user_id: UUID = Depends(auth_service.get_current_user),
     if cart is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User has no cart")
 
-    return CartResponseSchema(car_id=cart[0]["car_id"], options=cart[0]["options"], total_price =cart[0]["total_price"], duration=cart[0]["duration"])
+    return CartResponseSchema(
+        car_id=cart[0]["car_id"],
+        options=cart[0]["options"],
+        total_price =cart[0]["total_price"],
+        start_time=date.fromisoformat(cart[0]["start_time"]),
+        end_time =date.fromisoformat(cart[0]["end_time"])
+    )
 
 
 
@@ -51,15 +58,30 @@ async def add_to_cart(
     if options is None:
         options = []
 
-    total_sum_ = await cart_services.total_sum(car_id=car.id, options=options,duration=car_data.duration, db=db)
+    if car_data.start_time < date.today() or car_data.end_time < date.today():
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid date")
+
+    total_sum_ = await cart_services.total_sum(
+        car_id=car.id,
+        options=options,
+        start_time=car_data.start_time,
+        end_time=car_data.end_time,
+        db=db
+    )
 
     try:
-        result = await repositories_cart.add_to_cart(redis, car.id, options,car_data.duration,total_sum_, user_id)
+        result = await repositories_cart.add_to_cart(redis, car.id, options, car_data.start_time, car_data.end_time, total_sum_, user_id)
     except Exception as e:
         logger.error(f"500: Can't add car to cart: {e}\n{traceback.format_exc()}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-    return CartResponseSchema(car_id=car.id, options=result[0]["options"], total_price = total_sum_, duration=car_data.duration)
+    return CartResponseSchema(
+        car_id=car.id,
+        options=result[0]["options"],
+        total_price = total_sum_,
+        start_time=result[0]["start_time"],
+        end_time=result[0]["end_time"]
+    )
 
 
 

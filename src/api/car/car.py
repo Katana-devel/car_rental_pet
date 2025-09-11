@@ -11,6 +11,7 @@ from src.models.users import Role
 from src.repository import car as repositories_car
 from src.repository import options as repositories_options
 from src.schemas.car import CarResponseSchema, CarUpdateSchema, CarCreationSchema
+from src.services.car_avalbilitie import is_car_booked
 from src.services.roles import RoleAccessService
 
 
@@ -22,15 +23,23 @@ cars_router = APIRouter(prefix='/cars', tags=['cars'])
                   dependencies=[Depends(RateLimiter(times=10, seconds=20)),Depends(only_admin_access)])
 async def get_cars(limit: int = Query(10, ge=1, le=500), offset: int = Query(0, ge=0),  db: AsyncSession = Depends(get_db)):
     cars = await repositories_car.get_cars(limit, offset, db)
-    return cars
+    unbooked_cars = []
+    for car in cars:
+        car_id = car.id
+        if await is_car_booked(car_id, db):
+            continue
+        unbooked_cars.append(car)
+    return unbooked_cars
 
 
 @cars_router.get("/{car_id}", response_model=CarResponseSchema, 
                  dependencies=[Depends(RateLimiter(times=10, seconds=20)),Depends(only_admin_access)])
 async def get_car(car_id : UUID,db: AsyncSession = Depends(get_db)):
+
+    if await is_car_booked(car_id, db):
+        raise HTTPException(status_code=status.HTTP_306_RESERVED, detail="Car is reserved")
     
     car = await repositories_car.get_car(car_id, db)
-    
     if car is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Can't find a car")
     
@@ -113,5 +122,4 @@ async def delete_option_for_car(option_name: str, car_id: UUID, db: AsyncSession
     car = await repositories_car.get_car(car_id, db)
     if car is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="This car not found")
-    print(f"--------------------------------{option}------------------------")
     await repositories_car.delete_option_for_car(car, option[0].id, db)
