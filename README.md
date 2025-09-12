@@ -40,6 +40,24 @@ Repository: [car_rental_pet](https://github.com/Katana-devel/car_rental_pet)
 
 ---
 
+## Structure Description
+
+
+├── src/
+│   ├── db/                  # Connecting to databases, declarative_base
+│   ├── api/                 # Routers
+│   ├── models/              # ORM models
+│   ├── schemas/             # Pydantic Schemes
+│   ├── repository/          # Logic of access to the database
+│   ├── services/            # Business logic
+│   └── core/                # Configurations, logging
+├── main.py                  # FastAPI entry point
+├── .env                     # Configuration
+├── .env.example             # Configuration template
+├── pyproject.toml           # Poetry configuration
+├── CONTRIBUTING.md          # Instructions for making changes to the project
+└── README.md                # Main project documentation
+
 ## 📌 Roadmap
 
 Planned functionality:  
@@ -52,7 +70,8 @@ Planned functionality:
 -  Multi-currency support (e.g. [ExchangeRatesAPI.io](https://exchangeratesapi.io))  
 -  Promo codes and discounts  
 -  Google OpenID Connect authorization
--  Deploy 
+-  Tests
+-  Deploy
 
 ---
 
@@ -82,4 +101,5 @@ http://localhost:8000/docs
 
 All development done by me, from scratch.
 GitHub: [Katana-devel](https://github.com/Katana-devel)
+
 
