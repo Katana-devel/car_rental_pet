@@ -11,7 +11,7 @@ Repository: [car_rental_pet](https://github.com/Katana-devel/car_rental_pet)
 - **Database:** PostgreSQL, SQLAlchemy (Async)  
 - **Caching & Storage:** Redis  
 - **Message Broker:** RabbitMQ  
-- **Containerization:** Docker  
+- **Containerization:** Docker  (docker-compose)
 - **Version Control:** Git  
 - **Dependency Management:** Poetry  
 
@@ -36,7 +36,7 @@ Repository: [car_rental_pet](https://github.com/Katana-devel/car_rental_pet)
   - Modular structure with models, CRUD layer, services  
   - Async SQLAlchemy integration  
   - Configurable via `.env`  
-  - Containerized with Docker  
+  - Containerized with Docker-compose
 
 ---
 
@@ -82,3 +82,4 @@ http://localhost:8000/docs
 
 All development done by me, from scratch.
 GitHub: [Katana-devel](https://github.com/Katana-devel)
+
