@@ -64,7 +64,7 @@ Planned functionality:
 
 -  OCR document check (e.g. Smart Engines)  
 -  Payment system integration  
--  Booking history via RabbitMQ  
+-  Booking history 
 -  Notifications & email sending  
 -  Multi-language support (JSON translations or [Babel](http://babel.pocoo.org/))  
 -  Multi-currency support (e.g. [ExchangeRatesAPI.io](https://exchangeratesapi.io))  
@@ -101,5 +101,6 @@ http://localhost:8000/docs
 
 All development done by me, from scratch.
 GitHub: [Katana-devel](https://github.com/Katana-devel)
+
 
 
