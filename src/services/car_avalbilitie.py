@@ -15,7 +15,7 @@ async def is_car_booked(car_id: UUID, db: AsyncSession):
     car = await db.execute(stmt)
     car = car.first()
 
-    if car and car.end_time > date.today():
+    if car and car.end_date > date.today():
         return True
 
     return False

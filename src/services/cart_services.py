@@ -37,9 +37,3 @@ async def total_sum(car_id, options: list[OptionsResponseSchema] , start_time : 
     car = await repo_car.get_car(car_id, db)
     options_sum = sum(option["price"] for option in options) if car.options else 0
     return (car.price * duration) + (options_sum * duration)
-
-# TODO:
-#  -> make update booking
-#  -> make cancel booking
-#  -> git commit ->  readme.md
-#  -> booking history with using of RabbitMQ start

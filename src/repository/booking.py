@@ -77,3 +77,12 @@ async def create_booking(
     await db.commit()
     return await get_booking_by_user_id(user_id, db)
 
+
+async def delete_booking(user_id: UUID, db: AsyncSession):
+    booking = await get_booking_by_user_id(user_id, db)
+    if booking is None:
+        return None
+    await db.delete(booking)
+    await db.commit()
+    return True
+

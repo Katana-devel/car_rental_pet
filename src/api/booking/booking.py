@@ -107,3 +107,16 @@ async def create_booking(
 
     return await get_booking_by_user_id(user_id, db)
 
+
+@booking_router.delete("/{user_id}",dependencies=[Depends(RateLimiter(times=10, seconds=20))])
+async def delete_booking(
+        user_id: UUID = Depends(auth_service.get_current_user),
+        db: AsyncSession = Depends(get_db)
+):
+    booking_delete = await repo_booking.delete_booking(user_id, db)
+    if booking_delete is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
+    return "Booking successfully deleted"
+
+# TODO:
+#  -> booking history with using APScheduler 
