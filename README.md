@@ -40,9 +40,9 @@ Repository: [car_rental_pet](https://github.com/Katana-devel/car_rental_pet)
 
 ---
 
-## Structure Description
-
-
+## Project structure
+```bash
+.
 ├── src/
 │   ├── db/                  # Connecting to databases, declarative_base
 │   ├── api/                 # Routers
@@ -51,12 +51,14 @@ Repository: [car_rental_pet](https://github.com/Katana-devel/car_rental_pet)
 │   ├── repository/          # Logic of access to the database
 │   ├── services/            # Business logic
 │   └── core/                # Configurations, logging
+├── tests/                   # Unit tests
 ├── main.py                  # FastAPI entry point
 ├── .env                     # Configuration
 ├── .env.example             # Configuration template
 ├── pyproject.toml           # Poetry configuration
 ├── CONTRIBUTING.md          # Instructions for making changes to the project
 └── README.md                # Main project documentation
+```
 
 ## 📌 Roadmap
 
@@ -101,6 +103,7 @@ http://localhost:8000/docs
 
 All development done by me, from scratch.
 GitHub: [Katana-devel](https://github.com/Katana-devel)
+
 
 
 
