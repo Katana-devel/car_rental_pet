@@ -24,7 +24,7 @@ Repository: [car_rental_pet](https://github.com/Katana-devel/car_rental_pet)
   - Shopping cart with Redis as in-memory storage  
   - Dynamic price calculator  
   - Booking system: car availability tracking, collision protection, order statuses  
-  - Change history processing via RabbitMQ (in progress)  
+  - Change history processing via APScheduler (in progress)  
   - Customer profiles  
 
 - **Authentication & Authorization**
@@ -101,6 +101,7 @@ http://localhost:8000/docs
 
 All development done by me, from scratch.
 GitHub: [Katana-devel](https://github.com/Katana-devel)
+
 
 
 
