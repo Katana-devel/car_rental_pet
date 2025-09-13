@@ -23,7 +23,7 @@ class Booking(Base):
         UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
     )
     status: Mapped[str] = mapped_column("status", Enum(BookingStatus), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())  # оставляем datetime
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     start_date: Mapped[date] = mapped_column(Date)
     end_date: Mapped[date] = mapped_column(Date)
     delivery_address: Mapped[str] = mapped_column(String(150), nullable=True)
@@ -56,5 +56,34 @@ class Booking(Base):
         "Payment",
         back_populates="booking",
     )
+    bookings_history: Mapped[list["BookingHistory"]] = relationship(
+        "BookingHistory",
+        back_populates="booking",
+    )
 
 
+class BookingHistory(Base):
+    __tablename__ = "bookings_history"
+    id: Mapped[UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
+    )
+    status: Mapped[str] = mapped_column("status", Enum(BookingStatus), nullable=False)
+
+    user_id: Mapped[UUID] =  mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id"),
+        nullable=False
+    )
+    booking_id: Mapped[UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("bookings.id"),
+        nullable=False
+    )
+    user : Mapped["User"] = relationship(
+        "User",
+        back_populates="bookings_history",
+    )
+    booking: Mapped["Booking"] = relationship(
+        "Booking",
+        back_populates="bookings_history",
+    )

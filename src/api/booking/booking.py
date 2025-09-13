@@ -18,7 +18,7 @@ from src.repository import cart as repo_cart
 from src.repository import car as repo_car
 from src.repository import user as repo_user
 from src.repository import booking as repo_booking
-from src.services.booking_servis import unconfirmed_booking_exp
+from src.services.booking_services import unconfirmed_booking_exp
 
 
 
@@ -47,7 +47,7 @@ async def create_unconfirmed_booking(
         user_id: UUID = Depends(auth_service.get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    cart = await repo_cart.get_cart(redis, user_id) # If cart empty catch exception
+    cart = await repo_cart.get_cart(redis, user_id)
     if not cart:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cart is empty")
     car_id = cart[0]["car_id"]
@@ -76,6 +76,7 @@ async def get_booking_by_user_id(
     booking = await repo_booking.get_booking_by_user_id(user_id, db)
     if booking is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="booking is not found db")
+
     return BookingResponseSchema(
         id=booking.id,
         status=booking.status,
@@ -98,25 +99,35 @@ async def create_booking(
         db: AsyncSession = Depends(get_db),
         redis: Redis = Depends(get_redis)
 ):
-    if await get_booking_by_user_id(user_id, db):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User already has active booking")
+    unc_booking_list = await repo_booking.get_unconfirmed_booking(user_id, redis)
+    if not unc_booking_list:
+        raise HTTPException(status_code=404, detail="No unconfirmed booking found")
 
     booking =  await repo_booking.create_booking(user_id, db, redis)
     if not booking:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Can't create booking")
 
-    return await get_booking_by_user_id(user_id, db)
+    return BookingResponseSchema(
+        id=booking.id,
+        status=booking.status,
+        created_at=booking.created_at,
+        start_time=booking.start_date,
+        end_time=booking.end_date,
+        delivery_address=booking.delivery_address,
+        total_price=booking.total_price,
+        car_id=booking.car_id,
+        user_id=booking.user_id,
+        payment_id=booking.payment_id
+    )
+
 
 
 @booking_router.delete("/{user_id}",dependencies=[Depends(RateLimiter(times=10, seconds=20))])
 async def delete_booking(
-        user_id: UUID = Depends(auth_service.get_current_user),
+        booking_id: UUID,
         db: AsyncSession = Depends(get_db)
 ):
-    booking_delete = await repo_booking.delete_booking(user_id, db)
+    booking_delete = await repo_booking.delete_booking_by_id(booking_id, db)
     if booking_delete is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
     return "Booking successfully deleted"
-
-# TODO:
-#  -> booking history with using APScheduler

@@ -44,6 +44,10 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan"
     )
+    bookings_history: Mapped["BookingHistory"] = relationship(
+        "BookingHistory",
+        back_populates="user",
+    )
 
 
 

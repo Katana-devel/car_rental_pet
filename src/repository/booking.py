@@ -61,6 +61,15 @@ async def create_booking(
         db: AsyncSession,
         redis
 ):
+    stmt = (
+        select(Booking)
+        .join(User)
+        .where(User.id == user_id)
+    )
+    result = await db.execute(stmt)
+    if result.scalar_one_or_none():
+        return None
+
     unc_booking = await get_unconfirmed_booking(user_id, redis)
 
     booking = Booking(
@@ -75,14 +84,24 @@ async def create_booking(
 
     db.add(booking)
     await db.commit()
-    return await get_booking_by_user_id(user_id, db)
+    return booking
 
 
-async def delete_booking(user_id: UUID, db: AsyncSession):
-    booking = await get_booking_by_user_id(user_id, db)
+async def delete_booking_by_id(booking_id : UUID, db: AsyncSession):
+    stmt = select(Booking).where(Booking.id == booking_id)
+    result = await db.execute(stmt)
+    booking = result.scalar_one_or_none()
     if booking is None:
         return None
     await db.delete(booking)
     await db.commit()
     return True
+
+
+async def add_booking_to_history(booking_id: UUID, user_id: UUID, car_id: UUID, db: AsyncSession):
+    booking_history = Booking(booking_id=booking_id, user_id=user_id, car_id=car_id, status=BookingStatus.done)
+    db.add(booking_history)
+    await db.commit()
+    await db.refresh(booking_history)
+    return booking_history
 

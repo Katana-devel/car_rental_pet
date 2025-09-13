@@ -11,7 +11,7 @@ from src.models.users import Role
 from src.repository import car as repositories_car
 from src.repository import options as repositories_options
 from src.schemas.car import CarResponseSchema, CarUpdateSchema, CarCreationSchema
-from src.services.car_avalbilitie import is_car_booked
+from src.services.availabilities import is_car_booked
 from src.services.roles import RoleAccessService
 
 
