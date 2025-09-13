@@ -105,3 +105,11 @@ async def add_booking_to_history(booking_id: UUID, user_id: UUID, car_id: UUID, 
     await db.refresh(booking_history)
     return booking_history
 
+
+async def delete_booking(user_id: UUID, db: AsyncSession):
+    booking = await get_booking_by_user_id(user_id, db)
+    if booking is None:
+        return None
+    await db.delete(booking)
+    await db.commit()
+    return True
