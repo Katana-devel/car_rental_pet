@@ -48,6 +48,10 @@ class User(Base):
         "BookingHistory",
         back_populates="user",
     )
+    payments: Mapped["Payment"] = relationship(
+        "Payment",
+        back_populates="user"
+    )
 
 
 

@@ -46,6 +46,15 @@ class Car(Base):
         back_populates="car",
         cascade="all, delete-orphan"
     )
+    payments: Mapped[list["Payment"]] = relationship(
+        "Payment",
+        back_populates="car"
+    )
+    booking_history: Mapped[list["BookingHistory"]] = relationship(
+        "BookingHistory",
+        back_populates="car",
+        cascade="all, delete-orphan"
+    )
 
 
 class Options(Base):

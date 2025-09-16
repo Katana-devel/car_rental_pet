@@ -55,35 +55,45 @@ class Booking(Base):
     payment: Mapped["Payment"] = relationship(
         "Payment",
         back_populates="booking",
+        foreign_keys=[payment_id]
     )
-    bookings_history: Mapped[list["BookingHistory"]] = relationship(
-        "BookingHistory",
-        back_populates="booking",
-    )
-
 
 class BookingHistory(Base):
     __tablename__ = "bookings_history"
+
     id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
     )
     status: Mapped[str] = mapped_column("status", Enum(BookingStatus), nullable=False)
-
-    user_id: Mapped[UUID] =  mapped_column(
+    booking_id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), primary_key=True)
+    booking_price: Mapped[int] = mapped_column()
+    user_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("users.id"),
         nullable=False
     )
-    booking_id: Mapped[UUID] = mapped_column(
+
+    payment_id: Mapped[UUID] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("bookings.id"),
+        ForeignKey("payments.id", ondelete="SET NULL"),
         nullable=False
     )
-    user : Mapped["User"] = relationship(
+    car_id: Mapped[UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("cars.id"),
+        nullable=False
+    )
+
+    user: Mapped["User"] = relationship(
         "User",
         back_populates="bookings_history",
     )
-    booking: Mapped["Booking"] = relationship(
-        "Booking",
-        back_populates="bookings_history",
+    payment: Mapped["Payment"] = relationship(
+        "Payment",
+        back_populates="booking_history",
+        foreign_keys=[payment_id],
+    )
+    car: Mapped["Car"] = relationship(
+        "Car",
+        back_populates="booking_history",
     )

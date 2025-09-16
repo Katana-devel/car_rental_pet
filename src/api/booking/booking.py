@@ -9,6 +9,7 @@ from fastapi_limiter.depends import RateLimiter
 from src.core.logger.logger import logger
 from src.db.database import get_db
 from src.db.redis import get_redis
+from src.models.payments import PaymentStatus
 from src.models.users import Role
 from src.repository.booking import get_unconfirmed_booking
 from src.schemas.booking import BookingResponseSchema
@@ -17,6 +18,7 @@ from src.services.roles import RoleAccessService
 from src.repository import cart as repo_cart
 from src.repository import car as repo_car
 from src.repository import user as repo_user
+from src.repository import payment as repo_payment
 from src.repository import booking as repo_booking
 from src.services.booking_services import unconfirmed_booking_exp
 
@@ -27,7 +29,7 @@ only_admin_access = RoleAccessService([Role.admin])
 booking_router = APIRouter(prefix='/booking', tags=['booking'])
 
 
-@booking_router.get("/", dependencies=[Depends(RateLimiter(times=10, seconds=20))])
+@booking_router.get("/", dependencies=[Depends(RateLimiter(times=10, seconds=20)),Depends(only_admin_access)])
 async def get_unconfirmed_booking(
         redis: Redis = Depends(get_redis),
         user_id: UUID = Depends(auth_service.get_current_user)
@@ -47,18 +49,22 @@ async def create_unconfirmed_booking(
         user_id: UUID = Depends(auth_service.get_current_user),
         db: AsyncSession = Depends(get_db)
 ):
-    cart = await repo_cart.get_cart(redis, user_id) # If cart empty catch exception
+    cart = await repo_cart.get_cart(redis, user_id)
     if not cart:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cart is empty")
+
     car_id = cart[0]["car_id"]
     car = await repo_car.get_car(car_id, db)
-
     if not car.is_active:
         raise HTTPException(status_code=status.HTTP_306_RESERVED, detail="The car is occupied by another user")
 
+    payment = await repo_payment.create_payment(user_id=user_id, car_id=car_id, amount=cart[0]["total_price"], db=db)
+    if not payment:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Can't create a payment")
+
     await unconfirmed_booking_exp(redis, user_id, car_id)
 
-    booking = await repo_booking.create_unconfirmed_booking(address, user_id=user_id, car_id=car_id, redis=redis)
+    booking = await repo_booking.create_unconfirmed_booking(address=address, payment_id=payment.id, user_id=user_id, car_id=car_id, redis=redis)
     if not booking:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Can't create booking")
 
@@ -68,7 +74,7 @@ async def create_unconfirmed_booking(
 
 
 @booking_router.get("/{user_id}", response_model=BookingResponseSchema,
-                  dependencies=[Depends(RateLimiter(times=10, seconds=20))])
+                  dependencies=[Depends(RateLimiter(times=10, seconds=20)),Depends(only_admin_access)])
 async def get_booking_by_user_id(
         user_id: UUID = Depends(auth_service.get_current_user),
         db: AsyncSession = Depends(get_db)
@@ -92,16 +98,20 @@ async def get_booking_by_user_id(
 
 
 @booking_router.post("/{user_id}", response_model=BookingResponseSchema,
-                  dependencies=[Depends(RateLimiter(times=10, seconds=20))])
+                  dependencies=[Depends(RateLimiter(times=10, seconds=20)),Depends(only_admin_access)])
 async def create_booking(
         user_id: UUID = Depends(auth_service.get_current_user),
         db: AsyncSession = Depends(get_db),
         redis: Redis = Depends(get_redis)
 ):
-    if await get_booking_by_user_id(user_id, db):
+    if await repo_booking.get_booking_by_user_id(user_id, db):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User already has active booking")
 
     booking =  await repo_booking.create_booking(user_id, db, redis)
+
+    if booking == PaymentStatus.pending or booking == PaymentStatus.failed:
+        raise HTTPException(status_code=status.HTTP_402_PAYMENT_REQUIRED, detail="Payment required")
+
     if not booking:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Can't create booking")
 
