@@ -6,6 +6,8 @@ from typing import AsyncGenerator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_limiter import FastAPILimiter
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 
 from src.api.auth.auth import auth_router
 from src.db.redis import redis_manager
@@ -16,9 +18,13 @@ from src.api.cart.cart import cart_router
 from src.api.options.options import options_router
 from src.api.user.user import user_router
 from src.api.booking.booking import booking_router
+from src.api.payment.payment import payment_router
 from src.core.logger.logger import logger
+from src.services.booking_services import booking_history
+from src.repository.payment import cancel_expired_payments
 
 
+scheduler = AsyncIOScheduler()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
@@ -27,9 +33,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await redis_manager.connect()
     async with sessionmanager.session() as db:
         await create_admin(db)
-    # Отримуємо сесію Redis для FastAPILimiter
     async with redis_manager.session() as redis:
         await FastAPILimiter.init(redis)
+
+    scheduler.add_job(booking_history, IntervalTrigger(minutes=5))
+    scheduler.add_job(cancel_expired_payments, IntervalTrigger(minutes=3))
+    scheduler.start()
+    logger.info("Scheduler started...")
 
     yield
     logger.info("App shutting down...")
@@ -65,4 +75,5 @@ app.include_router(cart_router, prefix="/api")
 app.include_router(options_router, prefix="/api")
 app.include_router(user_router, prefix="/api")
 app.include_router(booking_router, prefix="/api")
+app.include_router(payment_router, prefix="/api")
 

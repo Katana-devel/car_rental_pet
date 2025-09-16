@@ -19,4 +19,3 @@ async def is_car_booked(car_id: UUID, db: AsyncSession):
         return True
 
     return False
-
