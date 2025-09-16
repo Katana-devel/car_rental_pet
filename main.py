@@ -18,8 +18,10 @@ from src.api.cart.cart import cart_router
 from src.api.options.options import options_router
 from src.api.user.user import user_router
 from src.api.booking.booking import booking_router
+from src.api.payment.payment import payment_router
 from src.core.logger.logger import logger
 from src.services.booking_services import booking_history
+from src.repository.payment import cancel_expired_payments
 
 
 scheduler = AsyncIOScheduler()
@@ -35,6 +37,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await FastAPILimiter.init(redis)
 
     scheduler.add_job(booking_history, IntervalTrigger(minutes=5))
+    scheduler.add_job(cancel_expired_payments, IntervalTrigger(minutes=3))
     scheduler.start()
     logger.info("Scheduler started...")
 
@@ -72,4 +75,5 @@ app.include_router(cart_router, prefix="/api")
 app.include_router(options_router, prefix="/api")
 app.include_router(user_router, prefix="/api")
 app.include_router(booking_router, prefix="/api")
+app.include_router(payment_router, prefix="/api")
 

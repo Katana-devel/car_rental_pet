@@ -1,4 +1,5 @@
 import json
+import uuid
 from datetime import date
 
 from fastapi import Depends, HTTPException, status
@@ -19,7 +20,14 @@ async def unconfirmed_booking_exp(redis, user_id: UUID, car_id: UUID):
 
     redis_lock = await redis.set(lock_key, lock_value, ex=15*60, nx=True)
     if not redis_lock:
-        raise HTTPException(status_code=status.HTTP_306_RESERVED, detail="Car locked")
+        current_lock = await redis.get(lock_key)
+        if current_lock:
+            current_lock = json.loads(current_lock)
+            if current_lock["user_id"] != str(user_id):
+                raise HTTPException(
+                    status_code=status.HTTP_423_LOCKED,
+                    detail="Car already locked"
+                )
 
     return json.loads(lock_value)
 
@@ -38,6 +46,8 @@ async def booking_history():
                     booking_id=booking.id,
                     user_id=booking.user_id,
                     car_id=booking.car_id,
+                    payment_id=booking.payment_id,
+                    booking_price=booking.total_price,
                     db=db,
                 )
                 if booking_done:
