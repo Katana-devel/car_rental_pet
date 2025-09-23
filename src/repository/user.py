@@ -85,7 +85,8 @@ async def create_admin(db: AsyncSession) -> User:
         password=auth_service.get_password_hash(config.admin_config.ADMIN_PASSWORD),
         age=config.admin_config.ADMIN_AGE,
         gender=config.admin_config.ADMIN_GENDER,
-        role=Role.admin
+        role=Role.admin,
+        is_confirmed=True
     )
     db.add(admin_user)
     await db.commit()
@@ -132,7 +133,7 @@ async def is_number(number: str, db : AsyncSession):
 
 async def confirmed_email(email: EmailStr, db: AsyncSession) -> None:
     user = await get_user_by_email(email, db)
-    user.confirmed = True
+    user.is_confirmed = True
     await db.commit()
 
 

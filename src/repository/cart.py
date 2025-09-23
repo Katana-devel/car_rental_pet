@@ -18,7 +18,7 @@ from src.services.auth import auth_service
 
 async def get_cart(redis, user_id: UUID = Depends(auth_service.get_current_user)):
     user_id = str(user_id)
-    if redis.json().get(f"cart_by_user_id:{user_id}", "$.car_id"):
+    if await redis.json().get(f"cart_by_user_id:{user_id}", "$.car_id"):
         return await redis.json().get(f"cart_by_user_id:{user_id}", "$")
     return None
 
