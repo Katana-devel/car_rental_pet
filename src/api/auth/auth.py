@@ -39,7 +39,7 @@ async def login(body: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = 
     if user is None: 
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password or email")
 
-    if not user.confirmed:
+    if not user.is_confirmed:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Email unconfirmed")
 
     verify_password = auth_service.verify_password(body.password, user.password)
@@ -69,7 +69,7 @@ async def refresh_token(credentials: HTTPAuthorizationCredentials = Depends(get_
     return {"access_token" : access_token, "refresh_token": refresh_token,  "token_type": "bearer"}
 
 
-@auth_router.get('/confirmed_email/{token}')
+@auth_router.get('/confirmed_email/{token}', status_code=status.HTTP_201_CREATED)
 async def confirmed_email(token: str, db: AsyncSession = Depends(get_db)):
     payload = await auth_service.decode_email_token(token)  # payload — dict
     email = payload.get("sub")
@@ -85,7 +85,7 @@ async def confirmed_email(token: str, db: AsyncSession = Depends(get_db)):
     return {"message": "Email confirmed"}
 
 
-@auth_router.post('/request_email')
+@auth_router.post('/request_email',status_code=status.HTTP_201_CREATED)
 async def request_email(email: EmailStr, db: AsyncSession = Depends(get_db)):
     user = await repositories_users.get_user_by_email(email, db)
 
