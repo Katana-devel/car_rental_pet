@@ -1,8 +1,9 @@
-#!/bin/env python3
-
+import asyncio
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
+import aio_pika
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_limiter import FastAPILimiter
@@ -10,6 +11,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 from src.api.auth.auth import auth_router
+from src.core.config.config import rabbitmq_config
 from src.db.redis import redis_manager
 from src.repository.user import create_admin
 from src.db.database import sessionmanager
@@ -22,6 +24,10 @@ from src.api.payment.payment import payment_router
 from src.core.logger.logger import logger
 from src.services.booking_services import booking_history
 from src.repository.payment import cancel_expired_payments
+from src.services.messages.message_sub_producer import setup as email_msg_setup
+from src.services.messages.message_sub_consumer import setup as cons_email_msg_setup
+from src.services.messages.message_sub_consumer import main as cons_email_msg_main
+
 
 
 scheduler = AsyncIOScheduler()
@@ -36,6 +42,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     async with redis_manager.session() as redis:
         await FastAPILimiter.init(redis)
 
+    app.state.rabbitmq_conn = await aio_pika.connect_robust(rabbitmq_config.AMQP_URL)
+    app.state.rabbitmq_channel = await app.state.rabbitmq_conn.channel()
+
+    await email_msg_setup()
+    asyncio.create_task(cons_email_msg_main())
+
     scheduler.add_job(booking_history, IntervalTrigger(minutes=5))
     scheduler.add_job(cancel_expired_payments, IntervalTrigger(minutes=3))
     scheduler.start()
@@ -45,6 +57,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("App shutting down...")
     await redis_manager.close()
     await FastAPILimiter.close()
+
 
 app = FastAPI(
     debug=True,
@@ -77,3 +90,5 @@ app.include_router(user_router, prefix="/api")
 app.include_router(booking_router, prefix="/api")
 app.include_router(payment_router, prefix="/api")
 
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
