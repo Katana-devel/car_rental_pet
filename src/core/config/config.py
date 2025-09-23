@@ -36,27 +36,43 @@ class JWTConfig(Settings):
 
 class AdminConfig(Settings):
     ADMIN_PASSWORD: str = "admin"
-    ADMIN_FULLNAME: str = "Admin User Ampss"
+    ADMIN_FULLNAME: str = "Admin User"
     ADMIN_AGE: int = 30
     ADMIN_GENDER: Gender = Gender.M
     ADMIN_EMAIL: str ="admin@example.com"
 
 class RedisConfig(Settings):
-    REDIS_HOST: str
+    REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
     REDIS_PASSWORD: Optional[str] = None
     REDIS_DB: int = 0
 
-# class CloudinaryConfig(Settings):
-#     CLOUDINARY_NAME: str = "your_cloud_name"
-#     CLOUDINARY_API_KEY: int = 1234567890
-#     CLOUDINARY_API_SECRET: str = "your_api_secret"
 
+class RabbitMQConfig(Settings):
+    RABBITMQ_DEFAULT_USER: str
+    RABBITMQ_DEFAULT_PASS: str
+    RABBITMQ_HOST: str = "rabbitmq"
+    RABBITMQ_PORT:int = 5672
+
+    @property
+    def AMQP_URL(self) -> str:
+        return f"amqp://{self.RABBITMQ_DEFAULT_USER}:{self.RABBITMQ_DEFAULT_PASS}@{self.RABBITMQ_HOST}:{self.RABBITMQ_PORT}/"
+
+class EmailConfig(Settings):
+    MAIL_USERNAME: str
+    MAIL_PASSWORD: str
+    MAIL_FROM: str
+    MAIL_PORT: int
+    MAIL_SERVER: str
+    MAIL_FROM_NAME: str
 
 admin_config = AdminConfig()
 db_config = DBConfig()
 jwt_config = JWTConfig()
 redis_config = RedisConfig()
+rabbitmq_config = RabbitMQConfig()
+email_config = EmailConfig()
+
 # cloudinary_config = CloudinaryConfig()
 print(f"DBConfig: {db_config.DATABASE_URL}")
 

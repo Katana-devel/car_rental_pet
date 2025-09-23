@@ -130,6 +130,11 @@ async def is_number(number: str, db : AsyncSession):
     return user
 
 
+async def confirmed_email(email: EmailStr, db: AsyncSession) -> None:
+    user = await get_user_by_email(email, db)
+    user.confirmed = True
+    await db.commit()
+
 
 # async def ban_user(user: User, db: AsyncSession):
     # ... # through user is_active (do not nessesary now)

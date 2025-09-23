@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, Request, status, BackgroundTasks
 from fastapi.security import OAuth2PasswordRequestForm, HTTPAuthorizationCredentials, HTTPBearer
+from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.database import get_db
@@ -7,6 +8,7 @@ from src.repository import user as repositories_users
 from src.schemas.user import UserCreationSchema, TokenSchema, UserResponseSchema
 from src.services.auth import auth_service
 from src.services.password_strength import validate_password as password_strength
+from src.services.messages import message_sub_producer
 
 
 auth_router = APIRouter(prefix='/auth', tags=['auth'])
@@ -14,18 +16,21 @@ get_refresh_token = HTTPBearer()
 
 
 @auth_router.post("/signup", response_model=UserResponseSchema, status_code=status.HTTP_201_CREATED)
-async def signup(body: UserCreationSchema, request: Request, db: AsyncSession = Depends(get_db)):
+async def signup(body: UserCreationSchema, db: AsyncSession = Depends(get_db)):
 
     exist_user = await repositories_users.get_user_by_email(body.email, db=db)
     if exist_user:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Account already exists")
-    
+
     if not password_strength(body.password):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password is too easy")
 
     body.password = auth_service.get_password_hash(body.password)
     new_user = await repositories_users.create_user(body=body, db=db)
-    return new_user 
+
+    await message_sub_producer.create_confirmation_message(body.email, host="http://localhost:8000")
+
+    return new_user
 
 
 @auth_router.post("/login",  response_model=TokenSchema)
@@ -33,12 +38,18 @@ async def login(body: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = 
     user = await repositories_users.get_user_by_email(email=body.username, db=db)
     if user is None: 
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password or email")
+
+    if not user.confirmed:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Email unconfirmed")
+
     verify_password = auth_service.verify_password(body.password, user.password)
     if not verify_password:
        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect password or email")
+
     access_token = await auth_service.create_access_token(data={"sub":body.username})
     refresh_token = await auth_service.create_refresh_token(data={"sub":body.username})
     await repositories_users.update_token(user, refresh_token, db)
+
     return {"access_token" : access_token, "refresh_token": refresh_token,  "token_type": "bearer"}
 
 
@@ -56,3 +67,34 @@ async def refresh_token(credentials: HTTPAuthorizationCredentials = Depends(get_
     refresh_token = await auth_service.create_refresh_token(data={"sub":email})
     await repositories_users.update_token(user, refresh_token, db)
     return {"access_token" : access_token, "refresh_token": refresh_token,  "token_type": "bearer"}
+
+
+@auth_router.get('/confirmed_email/{token}')
+async def confirmed_email(token: str, db: AsyncSession = Depends(get_db)):
+    payload = await auth_service.decode_email_token(token)  # payload — dict
+    email = payload.get("sub")
+    user = await repositories_users.get_user_by_email(email, db)
+
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Verification error")
+
+    if user.is_confirmed:
+        return {"message": "Your email is already confirmed"}
+
+    await repositories_users.confirmed_email(email, db)
+    return {"message": "Email confirmed"}
+
+
+@auth_router.post('/request_email')
+async def request_email(email: EmailStr, db: AsyncSession = Depends(get_db)):
+    user = await repositories_users.get_user_by_email(email, db)
+
+    if user.is_confirmed:
+        return {"message": "Your email is already confirmed"}
+
+    if user:
+        await message_sub_producer.create_confirmation_message(
+            user.email,
+            "http://localhost:8000"        )
+
+    return {"message": "Check your email for confirmation."}
