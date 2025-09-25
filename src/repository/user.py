@@ -136,6 +136,14 @@ async def confirmed_email(email: EmailStr, db: AsyncSession) -> None:
     user.is_confirmed = True
     await db.commit()
 
+async def password_reset(new_password: str,user_id: UUID, db: AsyncSession):
+    user = await get_user_by_id(user_id, db)
+    if user:
+        user.password = auth_service.get_password_hash(new_password)
+        await db.commit()
+        await db.refresh(user)
+        return user
+    return None
 
 # async def ban_user(user: User, db: AsyncSession):
     # ... # through user is_active (do not nessesary now)

@@ -27,6 +27,7 @@ class Auth:
         self.ACCESS_TOKEN_EXPIRE_MINUTES = config.jwt_config.ACCESS_TOKEN_EXPIRE_MINUTES
         self.REFRESH_TOKEN_EXPIRE_DAYS = config.jwt_config.REFRESH_TOKEN_EXPIRE_DAYS
         self.EMAIL_TOKEN_EXPIRE_DAYS = config.jwt_config.EMAIL_TOKEN_EXPIRE_DAYS
+        self.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES = config.jwt_config.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES
 
 
     def verify_password(self, plain_password, hashed_password):
@@ -87,6 +88,16 @@ class Auth:
 
     async def decode_refresh_token(self, refresh_token: str) -> dict:
         payload =  self._decode_token(token=refresh_token, expected_scope="refresh_token")
+        return payload
+
+
+    async def create_password_reset_token(self, data: dict):
+        scope="password_reset_token"
+        return self._create_token(data=data, expires_delta=timedelta(minutes=self.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES), scope=scope)
+
+
+    async def decode_password_reset_token(self, token: str) -> dict:
+        payload = self._decode_token(token=token, expected_scope="password_reset_token")
         return payload
 
 
