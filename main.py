@@ -11,6 +11,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 from src.api.auth.auth import auth_router
+from src.api.auth.password_reset import password_reset_router
 from src.core.config.config import rabbitmq_config
 from src.db.redis import redis_manager
 from src.repository.user import create_admin
@@ -24,9 +25,11 @@ from src.api.payment.payment import payment_router
 from src.core.logger.logger import logger
 from src.services.booking_services import booking_history
 from src.repository.payment import cancel_expired_payments
+from src.services.messages import password_reset_producer, password_reset_consumer
 from src.services.messages.message_sub_producer import setup as email_msg_setup
 from src.services.messages.message_sub_consumer import setup as cons_email_msg_setup
 from src.services.messages.message_sub_consumer import main as cons_email_msg_main
+from tests.email_messages_test import test_email
 
 
 
@@ -47,6 +50,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     await email_msg_setup()
     asyncio.create_task(cons_email_msg_main())
+    await password_reset_producer.setup()
+    asyncio.create_task(password_reset_consumer.main())
+
 
     scheduler.add_job(booking_history, IntervalTrigger(minutes=5))
     scheduler.add_job(cancel_expired_payments, IntervalTrigger(minutes=3))
@@ -89,6 +95,11 @@ app.include_router(options_router, prefix="/api")
 app.include_router(user_router, prefix="/api")
 app.include_router(booking_router, prefix="/api")
 app.include_router(payment_router, prefix="/api")
+app.include_router(password_reset_router,prefix="/api")
+app.include_router(test_email,prefix="/api")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
+
+#TODO: add car to cart - cant add more then 1 opt - FIX
