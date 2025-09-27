@@ -36,6 +36,9 @@ class User(Base):
     address: Mapped[str] = mapped_column(String(150), nullable=True)
     role: Mapped[Enum] = mapped_column("role", Enum(Role), nullable=False, default=Role.user)
     refresh_token: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    is_confirmed:Mapped[bool] = mapped_column(
+        Boolean(), default=False, nullable=False, server_default=text("false")
+    )
     is_active: Mapped[bool] = mapped_column(
         Boolean(), default=True, nullable=False, server_default=text("true")
     )

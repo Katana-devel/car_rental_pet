@@ -85,7 +85,8 @@ async def create_admin(db: AsyncSession) -> User:
         password=auth_service.get_password_hash(config.admin_config.ADMIN_PASSWORD),
         age=config.admin_config.ADMIN_AGE,
         gender=config.admin_config.ADMIN_GENDER,
-        role=Role.admin
+        role=Role.admin,
+        is_confirmed=True
     )
     db.add(admin_user)
     await db.commit()
@@ -130,6 +131,19 @@ async def is_number(number: str, db : AsyncSession):
     return user
 
 
+async def confirmed_email(email: EmailStr, db: AsyncSession) -> None:
+    user = await get_user_by_email(email, db)
+    user.is_confirmed = True
+    await db.commit()
+
+async def password_reset(new_password: str,user_id: UUID, db: AsyncSession):
+    user = await get_user_by_id(user_id, db)
+    if user:
+        user.password = auth_service.get_password_hash(new_password)
+        await db.commit()
+        await db.refresh(user)
+        return user
+    return None
 
 # async def ban_user(user: User, db: AsyncSession):
     # ... # through user is_active (do not nessesary now)
