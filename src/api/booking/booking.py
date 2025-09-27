@@ -117,3 +117,13 @@ async def create_booking(
 
     return await get_booking_by_user_id(user_id, db)
 
+@booking_router.delete("/{user_id}",
+                  dependencies=[Depends(RateLimiter(times=10, seconds=20))])
+async def cansel_booking(
+        booking_id: UUID,
+        db: AsyncSession = Depends(get_db)
+):
+    booking = await repo_booking.delete_booking_by_id(booking_id, db)
+    if booking:
+        return {"Success": "Booking Successfully Cancelled "}
+    return {"Fail": "Booking Cancellation Failed"}

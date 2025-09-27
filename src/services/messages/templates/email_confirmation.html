@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Email verification</title>
+  <style>
+    /* Basic reset */
+    html,body{margin:0;padding:0;background:#f4f6f8;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
+    .container{max-width:600px;margin:28px auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 6px 24px rgba(20,30,40,0.08)}
+    .header{background:linear-gradient(120deg,#941010,#290000);padding:28px 24px;color:#fff;text-align:center}
+    .logo{font-weight:700;font-size:20px;letter-spacing:0.2px}
+    .content{padding:28px 24px;color:#14202b;line-height:1.5}
+    h1{margin:0 0 10px;font-size:20px}
+    p{margin:0 0 16px}
+    .button-wrap{padding:8px 0 16px}
+    .btn{display:inline-block;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:600;background:#941010;color:#fff}
+    .muted{color:#6b7785;font-size:13px}
+    .code{background:#f7fafc;padding:12px;border-radius:8px;border:1px solid #e6eef6;font-family:monospace;font-size:13px;word-break:break-all}
+    .footer{background:#fbfdff;padding:18px 24px;border-top:1px solid #eef3f7;color:#6b7785;font-size:13px}
+    a.inline-link{color:#2563eb;text-decoration:none}
+    /* Responsive */
+    @media (max-width:420px){.container{margin:14px}.header{padding:22px}.content{padding:20px}.btn{width:100%;display:inline-block;text-align:center}}
+  </style>
+</head>
+<body>
+  <div class="container" role="article" aria-label="Email verification">
+    <div class="header">
+      <div class="logo">Car_Rental_pet</div>
+    </div>
+
+    <div class="content">
+      <h1>Verify your email</h1>
+      <p>Hi {{user_name}},</p>
+      <p>Thanks for signing up. Click the button below to confirm your email address and activate your account.</p>
+
+      <div class="button-wrap">
+        <!-- Primary verification link -->
+        <a class="btn" href="{{host}}/api/auth/confirmed_email/{{token}}" target="_blank" rel="noopener">Verify my email</a>
+      </div>
+
+      <p class="muted">If the button doesn't work, copy and paste the link below into your browser:</p>
+      <div class="code">{{host}}/api/auth/confirmed_email/{{token}}</div>
+
+      <hr style="border:none;border-top:1px solid #eef3f7;margin:18px 0">
+
+      <p style="font-size:13px;color:#374151">Security tip: Never share verification links or one-time codes. We will never ask you for your password by email.</p>
+    </div>
+
+    <div class="footer">
+      <div style="margin-top:8px;font-size:12px;color:#9aa7b2">If you didn't sign up, you can ignore this email.</div>
+    </div>
+  </div>
+</body>
+</html>
