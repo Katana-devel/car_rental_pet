@@ -49,7 +49,7 @@ async def send_password_reset(user_id: UUID, email: EmailStr, host: str):
         message = MessageSchema(
             subject="Reset Your Password",
             recipients=[email],
-            template_body={"host": host, "user_id": user_id, "token": token_verification},
+            template_body={"host": host, "user_id": user_id," email": email, "token": token_verification},
             subtype=MessageType.html
         )
 
