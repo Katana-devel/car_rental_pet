@@ -10,8 +10,8 @@ get_refresh_token = HTTPBearer()
 @test_email.get("/test-reset-email")
 async def test_reset_email():
     await send_password_reset(
-        user_id="f3edab0b-bfe2-42ee-bdf2-7196e265e945",  # тестовый UUID
-        email="test@example.com",  # сюда Mailtrap пропустит любое значение
+        user_id="f3edab0b-bfe2-42ee-bdf2-7196e265e945",  # test UUID
+        email="test@example.com",  # whatever u want can input hear
         host="http://localhost:8000"
     )
     return {"status": "email sent to Mailtrap"}
