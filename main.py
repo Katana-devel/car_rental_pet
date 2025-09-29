@@ -22,9 +22,11 @@ from src.api.options.options import options_router
 from src.api.user.user import user_router
 from src.api.booking.booking import booking_router
 from src.api.payment.payment import payment_router
+from src.api.currency.currency_exchange import currency_router
 from src.core.logger.logger import logger
 from src.services.booking_services import booking_history
 from src.repository.payment import cancel_expired_payments
+from src.services.currency.currency_exchange import update_currency_data
 from src.services.messages import password_reset_producer, password_reset_consumer
 from src.services.messages.message_sub_producer import setup as email_msg_setup
 from src.services.messages.message_sub_consumer import setup as cons_email_msg_setup
@@ -56,6 +58,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     scheduler.add_job(booking_history, IntervalTrigger(minutes=5))
     scheduler.add_job(cancel_expired_payments, IntervalTrigger(minutes=3))
+    scheduler.add_job(update_currency_data, IntervalTrigger(days=1))
     scheduler.start()
     logger.info("Scheduler started...")
 
@@ -74,7 +77,7 @@ app = FastAPI(
 )
 
 origins = [
-    "http://localhost",  # Дозволяє запити з localhost
+    "http://localhost",  # allows localhost requests
     "http://localhost:3000",  # frontend
 ]
 
@@ -96,7 +99,7 @@ app.include_router(user_router, prefix="/api")
 app.include_router(booking_router, prefix="/api")
 app.include_router(payment_router, prefix="/api")
 app.include_router(password_reset_router,prefix="/api")
-app.include_router(test_email,prefix="/api")
+app.include_router(currency_router,prefix="/api")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
