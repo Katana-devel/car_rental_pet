@@ -42,6 +42,7 @@ class AdminConfig(Settings):
     ADMIN_GENDER: Gender = Gender.M
     ADMIN_EMAIL: str ="admin@example.com"
 
+
 class RedisConfig(Settings):
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
