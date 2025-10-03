@@ -14,6 +14,7 @@ from src.repository import car as repositories_car
 from src.schemas.cart import CartResponseSchema, CartItem
 from src.services.auth import auth_service
 from src.services.cart_services import total_sum, selected_options
+from src.services.currency.сurrency_decorator import with_currency
 from src.services.roles import RoleAccessService
 from src.core.logger.logger import logger
 from src.services import cart_services
@@ -24,7 +25,8 @@ cart_router = APIRouter(prefix='/cart', tags=['cart'])
 
 
 @cart_router.get("/", response_model=CartResponseSchema,
-                   dependencies=[Depends(RateLimiter(times=10, seconds=20)), Depends(all_user_access)],)
+                   dependencies=[Depends(RateLimiter(times=10, seconds=20)), Depends(all_user_access)])
+@with_currency(["price", "options.options.price", "total_price", "amount"], all_matches=True)
 async def get_cart(user_id: UUID = Depends(auth_service.get_current_user),
     redis: Redis = Depends(get_redis)
 ):
@@ -44,6 +46,7 @@ async def get_cart(user_id: UUID = Depends(auth_service.get_current_user),
 
 @cart_router.post("/", response_model=CartResponseSchema,
                    dependencies=[Depends(RateLimiter(times=10, seconds=20)), Depends(all_user_access)])
+@with_currency(["price", "options.options.price", "total_price", "amount"], all_matches=True)
 async def add_to_cart(
         car_data: CartItem,
         user_id: UUID = Depends(auth_service.get_current_user),

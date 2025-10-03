@@ -9,26 +9,6 @@ from src.models import Payment
 from src.models.payments import PaymentStatus
 from src.repository import booking as repo_booking
 
-# async def get_unconfirmed_payment(
-#         user_id: UUID ,
-#         redis
-# ):
-#     user_id = str(user_id)
-#     if await redis.json().get(f"payment_by_user_id:{user_id}", "$"):
-#         return await redis.json().get(f"booking_by_user_id:{user_id}", "$")
-#     return None
-#
-#
-# async def create_unconfirmed_payment(user_id: UUID, car_id: UUID, amount: int, redis):
-#     payment_creation_json = {
-#         'user_id': str(user_id),
-#         'car_id': str(car_id),
-#         'amount': amount,
-#     }
-#     await redis.json().set(f"payment_by_user_id:{user_id}", "$", payment_creation_json)
-#     await redis.expire(f"payment_by_user_id:{user_id}", 15 * 60)
-#
-#     return await redis.json().get(f"booking_by_user_id:{user_id}", "$")
 
 
 async def get_payment_by_id(payment_id: UUID, db :AsyncSession):

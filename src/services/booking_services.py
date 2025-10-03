@@ -12,7 +12,6 @@ from src.models import Booking
 from src.models.bookings import BookingStatus
 from src.repository.booking import delete_booking_by_id, add_booking_to_history
 
-
 async def unconfirmed_booking_exp(redis, user_id: UUID, car_id: UUID):
 
     lock_key = f"car_locked:{car_id}"

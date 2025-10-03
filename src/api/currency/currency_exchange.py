@@ -12,7 +12,7 @@ get_refresh_token = HTTPBearer()
 @currency_router.get("/price/")
 async  def get_price(price_usd: float, currency: str = Query("USD"), redis: Redis = Depends(get_redis)):
     try:
-        response = {"currency": currency, "price": await convert(price_usd, currency, redis)}
+        response = await convert(price_usd, currency, redis)
         return response
     except:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown currency")

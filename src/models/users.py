@@ -34,6 +34,7 @@ class User(Base):
     number: Mapped[Optional[str]] = mapped_column(String(25), nullable=True, unique=True)
     age: Mapped[Optional[int]] = mapped_column(nullable=True) #TODO: Verify with passport
     address: Mapped[str] = mapped_column(String(150), nullable=True)
+    currency: Mapped[str] = mapped_column(String(255), nullable=True, default="usd")
     role: Mapped[Enum] = mapped_column("role", Enum(Role), nullable=False, default=Role.user)
     refresh_token: Mapped[str | None] = mapped_column(String(255), nullable=True)
     is_confirmed:Mapped[bool] = mapped_column(
