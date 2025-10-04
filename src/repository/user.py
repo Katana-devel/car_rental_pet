@@ -103,23 +103,28 @@ async def get_user_by_id(user_id: UUID, db: AsyncSession):
     return user
 
 
-async def add_user_profile_data(
+async def update_user_profile_data(
         user_data : UserProfileSchema,
         user_id: UUID,
         db: AsyncSession
     ):
-    stmt = (
-        update(User).where(User.id == user_id).values(
-            email=user_data.email,
-            full_name=user_data.full_name,
-            gender=user_data.gender,
-            age=user_data.age,
-            address=user_data.address,
-            number=user_data.number
-        )
-    )
-    await db.execute(stmt)
+    user = await get_user_by_id(user_id, db)
+
+    if user_data.full_name:
+        user.full_name = user_data.full_name
+    if user_data.gender:
+        user.gender = user_data.gender
+    if user_data.age:
+        user.age = user_data.age
+    if user_data.address:
+        user.address = user_data.address
+    if user_data.number:
+        user.number = user_data.number
+    if user_data.currency:
+        user.currency = user_data.currency
+
     await db.commit()
+    await db.refresh(user)
 
     return await get_user_by_id(user_id,db)
 

@@ -2,16 +2,21 @@ import traceback
 from typing import List, Optional, Annotated
 from uuid import UUID
 from fastapi import APIRouter, File, Form, HTTPException, Depends, UploadFile, status, Query
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi_limiter.depends import RateLimiter
 
 from src.core.logger.logger import logger
 from src.db.database import get_db
+from src.db.redis import get_redis
 from src.models.users import Role
 from src.repository import car as repositories_car
 from src.repository import options as repositories_options
+from src.repository import user as repositories_user
 from src.schemas.car import CarResponseSchema, CarUpdateSchema, CarCreationSchema
+from src.services.auth import auth_service
 from src.services.car_avalbilitie import is_car_booked
+from src.services.currency.сurrency_decorator import with_currency
 from src.services.roles import RoleAccessService
 
 
@@ -19,9 +24,16 @@ only_admin_access = RoleAccessService([Role.admin])
 
 cars_router = APIRouter(prefix='/cars', tags=['cars'])
 
+
 @cars_router.get("/", response_model=List[CarResponseSchema],
                   dependencies=[Depends(RateLimiter(times=10, seconds=20)),Depends(only_admin_access)])
-async def get_cars(limit: int = Query(10, ge=1, le=500), offset: int = Query(0, ge=0),  db: AsyncSession = Depends(get_db)):
+@with_currency(["price", "options.options.price"], all_matches=True)
+async def get_cars(
+        limit: int = Query(10, ge=1, le=500),
+        offset: int = Query(0, ge=0),
+        user_id: UUID = Depends(auth_service.get_current_user),
+        db: AsyncSession = Depends(get_db),
+        redis: Redis= Depends(get_redis)):
     cars = await repositories_car.get_cars(limit, offset, db)
     unbooked_cars = []
     for car in cars:
@@ -33,8 +45,11 @@ async def get_cars(limit: int = Query(10, ge=1, le=500), offset: int = Query(0, 
 
 
 @cars_router.get("/{car_id}", response_model=CarResponseSchema, 
-                 dependencies=[Depends(RateLimiter(times=10, seconds=20)),Depends(only_admin_access)])
-async def get_car(car_id : UUID,db: AsyncSession = Depends(get_db)):
+                 dependencies=[Depends(RateLimiter(times=10, seconds=20))])
+@with_currency(["price", "options.options.price"], all_matches=True)
+async def get_car(car_id : UUID,db: AsyncSession = Depends(get_db), user_id: UUID = Depends(auth_service.get_current_user),
+                  redis: Redis = Depends(get_redis)
+):
 
     if await is_car_booked(car_id, db):
         raise HTTPException(status_code=status.HTTP_306_RESERVED, detail="Car is reserved")
@@ -48,10 +63,13 @@ async def get_car(car_id : UUID,db: AsyncSession = Depends(get_db)):
 
 @cars_router.post("/car_options", response_model=CarResponseSchema,
                  dependencies=[Depends(RateLimiter(times=10, seconds=20)),Depends(only_admin_access)])
+@with_currency(["price", "options.options.price"], all_matches=True)
 async def add_options_for_car(
     car_id: UUID,
     option_name: list[str] = Query(...),
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    user_id: UUID = Depends(auth_service.get_current_user),
+    redis: Redis = Depends(get_redis)
 ):
     car = await repositories_car.get_car(car_id, db)
     if car is None:
@@ -72,10 +90,11 @@ async def add_options_for_car(
 
 
 
-
 @cars_router.post("/", response_model=CarResponseSchema,
                    dependencies=[Depends(RateLimiter(times=10, seconds=20)),Depends(only_admin_access)])
-async def create_car(car_data: CarCreationSchema, db: AsyncSession = Depends(get_db)):
+@with_currency(["price", "options.options.price"], all_matches=True)
+async def create_car(car_data: CarCreationSchema, db: AsyncSession = Depends(get_db),
+                     user_id: UUID = Depends(auth_service.get_current_user), redis: Redis = Depends(get_redis)):
 
     try: 
         car = await repositories_car.create_car(car_data, db)
@@ -89,7 +108,9 @@ async def create_car(car_data: CarCreationSchema, db: AsyncSession = Depends(get
 
 @cars_router.patch("/{car_id}", response_model=CarResponseSchema, 
                    dependencies=[Depends(RateLimiter(times=10, seconds=20)),Depends(only_admin_access)])
-async def update_car(car_id: UUID, car_data: CarUpdateSchema,  db: AsyncSession = Depends(get_db)):
+@with_currency(["price", "options.options.price"], all_matches=True)
+async def update_car(car_id: UUID, car_data: CarUpdateSchema,  db: AsyncSession = Depends(get_db),
+                     user_id: UUID = Depends(auth_service.get_current_user), redis: Redis = Depends(get_redis)):
     
     car = await repositories_car.get_car(car_id, db=db)
     if car is None:
