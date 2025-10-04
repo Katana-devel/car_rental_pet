@@ -21,6 +21,7 @@ class UserResponseSchema(BaseModel):
     age: Optional[int] = None
     address: Optional[str] = None
     gender : Optional[Gender] = None
+    currency: Optional[str] = None
     role: Role
 
 
@@ -33,12 +34,13 @@ class TokenSchema(BaseModel):
 
 
 class UserProfileSchema(BaseModel):
-    email: EmailStr
-    full_name: str
-    number : str
+    email: Optional[EmailStr]= None
+    full_name: Optional[str] = None
+    number : Optional[str] = None
     gender: Optional[Gender] = None
     age: Optional[int] = None
     address: Optional[str] = None
+    currency: Optional[str] = 'usd'
 
 
 
@@ -50,3 +52,4 @@ class UpdateUserProfileSchema(BaseModel):
     age: Optional[int] = None
     address: Optional[str] = None
     gender: Optional[Gender] = None
+    currency: Optional[str] = 'usd'

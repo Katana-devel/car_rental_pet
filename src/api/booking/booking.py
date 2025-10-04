@@ -1,12 +1,10 @@
-import traceback
-from typing import List, Optional, Annotated
+
 from uuid import UUID
-from fastapi import APIRouter, HTTPException, Depends, status, Query
+from fastapi import APIRouter, HTTPException, Depends, status
 from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi_limiter.depends import RateLimiter
 
-from src.core.logger.logger import logger
 from src.db.database import get_db
 from src.db.redis import get_redis
 from src.models.payments import PaymentStatus
@@ -14,10 +12,10 @@ from src.models.users import Role
 from src.repository.booking import get_unconfirmed_booking
 from src.schemas.booking import BookingResponseSchema
 from src.services.auth import auth_service
+from src.services.currency.сurrency_decorator import with_currency
 from src.services.roles import RoleAccessService
 from src.repository import cart as repo_cart
 from src.repository import car as repo_car
-from src.repository import user as repo_user
 from src.repository import payment as repo_payment
 from src.repository import booking as repo_booking
 from src.services.booking_services import unconfirmed_booking_exp
@@ -30,6 +28,7 @@ booking_router = APIRouter(prefix='/booking', tags=['booking'])
 
 
 @booking_router.get("/", dependencies=[Depends(RateLimiter(times=10, seconds=20)),Depends(only_admin_access)])
+@with_currency(["price", "options.options.price", "total_price", "amount"], all_matches=True)
 async def get_unconfirmed_booking(
         redis: Redis = Depends(get_redis),
         user_id: UUID = Depends(auth_service.get_current_user)
@@ -43,6 +42,7 @@ async def get_unconfirmed_booking(
 
 
 @booking_router.post("/", dependencies=[Depends(RateLimiter(times=10, seconds=20))])
+@with_currency(["price", "options.options.price", "total_price", "amount"], all_matches=True)
 async def create_unconfirmed_booking(
         address: str,
         redis: Redis = Depends(get_redis),
@@ -54,7 +54,7 @@ async def create_unconfirmed_booking(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cart is empty")
 
     car_id = cart[0]["car_id"]
-    car = await repo_car.get_car(car_id, db)
+    car = await repo_car.get_car(car_id=car_id, db=db)
     if not car.is_active:
         raise HTTPException(status_code=status.HTTP_306_RESERVED, detail="The car is occupied by another user")
 
@@ -62,19 +62,20 @@ async def create_unconfirmed_booking(
     if not payment:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Can't create a payment")
 
-    await unconfirmed_booking_exp(redis, user_id, car_id)
+    await unconfirmed_booking_exp(redis=redis, user_id=user_id, car_id=car_id)
 
     booking = await repo_booking.create_unconfirmed_booking(address=address, payment_id=payment.id, user_id=user_id, car_id=car_id, redis=redis)
     if not booking:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Can't create booking")
 
-    await repo_cart.delete_cart(redis, user_id)
+    await repo_cart.delete_cart(redis=redis,user_id=user_id)
 
-    return await get_unconfirmed_booking(redis, user_id)
+    return await get_unconfirmed_booking(redis=redis, user_id=user_id, db=db)
 
 
 @booking_router.get("/{user_id}", response_model=BookingResponseSchema,
                   dependencies=[Depends(RateLimiter(times=10, seconds=20)),Depends(only_admin_access)])
+@with_currency(["price", "options.options.price", "total_price", "amount"], all_matches=True)
 async def get_booking_by_user_id(
         user_id: UUID = Depends(auth_service.get_current_user),
         db: AsyncSession = Depends(get_db)
@@ -99,6 +100,7 @@ async def get_booking_by_user_id(
 
 @booking_router.post("/{user_id}", response_model=BookingResponseSchema,
                   dependencies=[Depends(RateLimiter(times=10, seconds=20)),Depends(only_admin_access)])
+@with_currency(["price", "options.options.price", "total_price", "amount"], all_matches=True)
 async def create_booking(
         user_id: UUID = Depends(auth_service.get_current_user),
         db: AsyncSession = Depends(get_db),
@@ -115,9 +117,10 @@ async def create_booking(
     if not booking:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Can't create booking")
 
-    return await get_booking_by_user_id(user_id, db)
+    return await get_booking_by_user_id(user_id=user_id, db=db)
 
-@booking_router.delete("/{user_id}",
+
+@booking_router.delete("/}",
                   dependencies=[Depends(RateLimiter(times=10, seconds=20))])
 async def cansel_booking(
         booking_id: UUID,

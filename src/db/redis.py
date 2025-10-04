@@ -17,8 +17,7 @@ class RedisSessionManager:
         try:
             await self._redis_client.ping()
         except Exception as e:
-            logger.error(f"Ошибка подключения к Redis: {e}")
-            print("connection error")
+            logger.error(f"Error connecting to Redis: {e}")
             
     async def close(self):
         if self._redis_client:
@@ -32,7 +31,6 @@ class RedisSessionManager:
 
 
 
-# Створюємо глобальний об'єкт менеджера Redis
 redis_manager = RedisSessionManager(
     host=config.redis_config.REDIS_HOST,
     port=config.redis_config.REDIS_PORT,
