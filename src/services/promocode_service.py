@@ -2,7 +2,6 @@
 import json
 from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
-from email.policy import default
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -22,6 +21,7 @@ async def percentage(discount: int, sum_: int):
         return None
     value = Decimal(discount * sum_ / 100)
     return int(value.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
 
 async def get_valid_promo_by_code(unique_code: str, db: AsyncSession):
     p_code = await repo_promocode.get_promo_code(p_code_unique=unique_code, db=db)
