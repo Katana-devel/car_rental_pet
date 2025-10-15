@@ -1,6 +1,6 @@
 """
-    1. Юзер делает unconfirmed бронирование → создаётся Payment (status=pending).
-	2.	/pay эндпоинт → меняет Payment.status на success. и вызывает create_booking (confirmed)
-	3.	После success → создаётся confirmed Booking в Postgresя.
-	4.	Если payment через 15 минут так и не стал success → unconfirmed_booking в Redis удаляется
+    1. User makes an unconfirmed booking → Payment is created (status=pending).
+    2.    /pay endpoint → changes Payment.status to success. and calls create_booking (confirmed)
+    3.    After success → confirmed Booking is created in Postgres.
+	4.    If payment is still not success after 15 minutes → unconfirmed_booking in Redis is deleted.
 """
