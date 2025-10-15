@@ -29,7 +29,8 @@ Repository: [car_rental_pet](https://github.com/Katana-devel/car_rental_pet)
   - Payment system logic integration  
   - Booking history
   - Notifications & email sending
-  - Multi-currency support 
+  - Multi-currency support
+  - Promo codes and discounts
 
 - **Authentication & Authorization**
   - JWT tokens (access, refresh, email)  
@@ -67,7 +68,7 @@ Repository: [car_rental_pet](https://github.com/Katana-devel/car_rental_pet)
 ## 📌 Roadmap
 
 Planned functionality:  
--  Promo codes and discounts (in progress) 
+-  Recomendations
 -  Google OpenID Connect authorization
 -  Tests
 -  Deploy
@@ -100,6 +101,7 @@ http://localhost:8000/docs
 
 All development done by me, from scratch.
 GitHub: [Katana-devel](https://github.com/Katana-devel)
+
 
 
 
