@@ -3,16 +3,6 @@ from typing import List, Optional
 from uuid import UUID, uuid4
 
 from fastapi import Depends
-from redis.asyncio import Redis
-from redis.commands.json.path import Path
-
-from src.db.redis import get_redis
-from src.models.users import Role, User, Gender
-from src.core.config import config
-from src.models.users import User
-from src.core.logger.logger import logger
-from src.schemas.cart import CartItem, CartResponseSchema
-from src.repository.user import get_user_by_id
 from src.services.auth import auth_service
 
 

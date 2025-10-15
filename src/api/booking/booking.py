@@ -31,10 +31,11 @@ booking_router = APIRouter(prefix='/booking', tags=['booking'])
 @with_currency(["price", "options.options.price", "total_price", "amount"], all_matches=True)
 async def get_unconfirmed_booking(
         redis: Redis = Depends(get_redis),
-        user_id: UUID = Depends(auth_service.get_current_user)
+        user_id: UUID = Depends(auth_service.get_current_user),
+        db: AsyncSession = Depends(get_db)
 ):
 
-    booking = await repo_booking.get_unconfirmed_booking(user_id, redis)
+    booking = await repo_booking.get_unconfirmed_booking(user_id=user_id, redis=redis)
     if not booking:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
 
@@ -78,9 +79,10 @@ async def create_unconfirmed_booking(
 @with_currency(["price", "options.options.price", "total_price", "amount"], all_matches=True)
 async def get_booking_by_user_id(
         user_id: UUID = Depends(auth_service.get_current_user),
-        db: AsyncSession = Depends(get_db)
+        db: AsyncSession = Depends(get_db),
+        redis: Redis = Depends(get_redis)
 ):
-    booking = await repo_booking.get_booking_by_user_id(user_id, db)
+    booking = await repo_booking.get_booking_by_user_id(user_id=user_id, db=db, redis=redis)
     if booking is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="booking is not found db")
     return BookingResponseSchema(
@@ -102,14 +104,15 @@ async def get_booking_by_user_id(
                   dependencies=[Depends(RateLimiter(times=10, seconds=20)),Depends(only_admin_access)])
 @with_currency(["price", "options.options.price", "total_price", "amount"], all_matches=True)
 async def create_booking(
+        total_price: int,
         user_id: UUID = Depends(auth_service.get_current_user),
         db: AsyncSession = Depends(get_db),
         redis: Redis = Depends(get_redis)
 ):
-    if await repo_booking.get_booking_by_user_id(user_id, db):
+    if await repo_booking.get_booking_by_user_id(user_id=user_id, db=db, redis=redis):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="User already has active booking")
 
-    booking =  await repo_booking.create_booking(user_id, db, redis)
+    booking =  await repo_booking.create_booking(total_price=total_price,user_id=user_id, db=db, redis=redis)
 
     if booking == PaymentStatus.pending or booking == PaymentStatus.failed:
         raise HTTPException(status_code=status.HTTP_402_PAYMENT_REQUIRED, detail="Payment required")
@@ -117,7 +120,7 @@ async def create_booking(
     if not booking:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Can't create booking")
 
-    return await get_booking_by_user_id(user_id=user_id, db=db)
+    return await repo_booking.get_booking_by_user_id(user_id=user_id, db=db, redis=redis)
 
 
 @booking_router.delete("/}",
@@ -130,3 +133,4 @@ async def cansel_booking(
     if booking:
         return {"Success": "Booking Successfully Cancelled "}
     return {"Fail": "Booking Cancellation Failed"}
+
