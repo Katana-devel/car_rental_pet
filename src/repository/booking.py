@@ -51,7 +51,7 @@ async def create_unconfirmed_booking(
     return await redis.json().get(f"booking_by_user_id:{user_id}", "$")
 
 
-async def get_booking_by_user_id(user_id: UUID, db: AsyncSession):
+async def get_booking_by_user_id(user_id: UUID, db: AsyncSession, redis):
     stmt = (
         select(Booking)
         .join(User)
@@ -62,6 +62,7 @@ async def get_booking_by_user_id(user_id: UUID, db: AsyncSession):
     return result.scalar_one_or_none()
 
 async def create_booking(
+        total_price:int,
         user_id: UUID ,
         db: AsyncSession,
         redis):
@@ -71,8 +72,7 @@ async def create_booking(
         .where(User.id == user_id)
     )
     result = await db.execute(stmt)
-    if result.scalar_one_or_none():
-        return None
+    result.scalar_one_or_none()
 
     unc_booking = await get_unconfirmed_booking(user_id, redis)
 
@@ -87,7 +87,7 @@ async def create_booking(
         start_date=date.fromisoformat(unc_booking[0]["start_time"]),
         end_date = date.fromisoformat(unc_booking[0]["end_time"]),
         delivery_address=unc_booking[0]["delivery_address"],
-        total_price=unc_booking[0]["total_price"],
+        total_price=total_price,
         payment_id=unc_booking[0]["payment"]
     )
 

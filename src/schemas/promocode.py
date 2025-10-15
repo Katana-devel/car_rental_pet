@@ -28,7 +28,7 @@ class CreatePromoCodeSchema(BaseModel):
         )
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 class PromoCodeResponseSchema(BaseModel):
     id: UUID
@@ -50,4 +50,4 @@ class PromoCodeResponseSchema(BaseModel):
         return self.created_at.strftime("%d.%m.%Y %H:%M")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
