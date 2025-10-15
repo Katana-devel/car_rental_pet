@@ -1,4 +1,3 @@
-# currency_utils.py
 import asyncio
 from functools import wraps
 from typing import Any, Sequence, Union, List, Tuple
@@ -6,20 +5,17 @@ from uuid import UUID
 from decimal import Decimal, ROUND_HALF_UP
 import inspect
 
-from fastapi import Depends
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.db.database import get_db
-from src.db.redis import get_redis, redis_manager
+from src.db.redis import get_redis
 from src.repository.user import get_user_by_id
-from src.services.auth import auth_service
 from src.services.currency.currency_exchange import convert
 
 
 def _is_mapping(obj: Any) -> bool:
     return isinstance(obj, dict)
-
 
 
 def _get_all_by_path(obj: Any, path: str) -> List[Tuple[Any, str, Any]]:
@@ -90,60 +86,36 @@ def with_currency(
 
     def decorator(func):
         @wraps(func)
-        async def wrapper(
-            *args,
-            user_id: UUID = Depends(auth_service.get_current_user),
-            db: AsyncSession = Depends(get_db),
-            redis: Redis = Depends(get_redis),
-            **kwargs
-        ):
-            sig = inspect.signature(func)
-            try:
-                bound = sig.bind_partial(*args, **kwargs)
-                bound_args = bound.arguments
-            except Exception:
-                bound_args = {}
+        async def wrapper(*args, **kwargs):
+            user_id: UUID = kwargs.get("user_id")
+            db: AsyncSession = kwargs.get("db")
+            redis: Redis = kwargs.get("redis")
 
+            if not any([user_id, db, redis]):
+                for arg in args:
+                    if isinstance(arg, AsyncSession):
+                        db = arg
+                    elif isinstance(arg, Redis):
+                        redis = arg
+                    elif isinstance(arg, UUID):
+                        user_id = arg
 
-            effective_user_id = bound_args.get("user_id", user_id)
-            effective_db = bound_args.get("db", db)
-            effective_redis = bound_args.get("redis", redis)
-
-
-            from fastapi.params import Depends as _FastAPIDependsClass
-
-            def _is_dep_inst(x):
-                return isinstance(x, _FastAPIDependsClass)
-
-            if _is_dep_inst(effective_db) or _is_dep_inst(effective_user_id) or _is_dep_inst(effective_redis):
-
+            if not all([user_id, db, redis]):
                 raise RuntimeError(
-                    "Decorated function called without resolved dependencies. "
-                    "When calling this endpoint function from Python code (not via FastAPI), "
-                    "pass the resolved dependencies explicitly as named args, e.g. "
-                    "`await get_unconfirmed_booking(redis=redis, user_id=user_id)` "
-                    "or call the original function without decorator via `func.__wrapped__`."
+                    f"Missing dependencies: user_id={user_id}, db={db}, redis={redis}. "
+                    "Ensure FastAPI provides them via Depends in the route."
                 )
 
-
-            call_kwargs = dict(kwargs)
-            bound_names = set(bound_args.keys())
-
-            for name, value in (("user_id", effective_user_id), ("db", effective_db), ("redis", effective_redis)):
-                if name in sig.parameters and name not in bound_names and name not in call_kwargs:
-                    call_kwargs[name] = value
-
-            result = await func(*args, **call_kwargs)
-
+            result = await func(*args, **kwargs)
             if result is None:
                 return result
 
-            user = await get_user_by_id(effective_user_id, effective_db)
+            user = await get_user_by_id(user_id, db)
             currency = (user.currency or "usd").lower()
 
             items = result if isinstance(result, list) else [result]
-
             work: List[Tuple[Any, str, Any]] = []
+
             for item in items:
                 for attr in attrs:
                     matches = _get_all_by_path(item, attr)
@@ -165,7 +137,7 @@ def with_currency(
                 except Exception:
                     return 0.0
 
-            coros = [convert(_to_float(value), currency, effective_redis) for (_, _, value) in work]
+            coros = [convert(_to_float(value), currency, redis) for (_, _, value) in work]
 
             if parallel and coros:
                 sem = asyncio.Semaphore(concurrency_limit)
@@ -183,14 +155,16 @@ def with_currency(
             for (parent, key, _old), conv in zip(work, converted_list):
                 new_value = conv.get("price")
                 new_currency = conv.get("currency", currency)
+
                 if replace_original:
                     _set_value_on_parent(parent, key, new_value)
                 else:
                     _set_value_on_parent(parent, f"{key}{converted_suffix}", new_value)
+
                 _set_value_on_parent(parent, "currency", new_currency)
 
             return result
-
+        wrapper.__signature__ = inspect.signature(func)
         return wrapper
 
     return decorator

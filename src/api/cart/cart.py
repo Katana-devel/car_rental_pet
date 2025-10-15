@@ -1,5 +1,6 @@
 import traceback
 from datetime import date
+from typing import Optional
 from uuid import UUID
 from fastapi import APIRouter, HTTPException, Depends, status
 from redis.asyncio import Redis
@@ -18,6 +19,7 @@ from src.services.currency.сurrency_decorator import with_currency
 from src.services.roles import RoleAccessService
 from src.core.logger.logger import logger
 from src.services import cart_services
+from src.services import promocode_service
 
 all_user_access = RoleAccessService([Role.admin, Role.user])
 
@@ -37,9 +39,9 @@ async def get_cart(user_id: UUID = Depends(auth_service.get_current_user),
     return CartResponseSchema(
         car_id=cart[0]["car_id"],
         options=cart[0]["options"],
-        total_price =cart[0]["total_price"],
+        total_price=cart[0]["total_price"],
         start_time=date.fromisoformat(cart[0]["start_time"]),
-        end_time =date.fromisoformat(cart[0]["end_time"])
+        end_time=date.fromisoformat(cart[0]["end_time"])
     )
 
 
@@ -49,6 +51,7 @@ async def get_cart(user_id: UUID = Depends(auth_service.get_current_user),
 @with_currency(["price", "options.options.price", "total_price", "amount"], all_matches=True)
 async def add_to_cart(
         car_data: CartItem,
+        promo_code: Optional[str] = None,
         user_id: UUID = Depends(auth_service.get_current_user),
         db: AsyncSession = Depends(get_db),
         redis: Redis = Depends(get_redis)
@@ -63,6 +66,9 @@ async def add_to_cart(
 
     if car_data.start_time < date.today() or car_data.end_time < date.today():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="invalid date")
+
+    if promo_code:
+        await promocode_service.apply_promo_to_cart(user_id=user_id, unique_code=promo_code, db=db, redis=redis)
 
     total_sum_ = await cart_services.total_sum(
         car_id=car.id,

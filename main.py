@@ -12,6 +12,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 
 from src.api.auth.auth import auth_router
 from src.api.auth.password_reset import password_reset_router
+from src.api.promocode.promocode import promo_code_router
 from src.core.config.config import rabbitmq_config
 from src.db.redis import redis_manager
 from src.repository.user import create_admin
@@ -100,6 +101,7 @@ app.include_router(booking_router, prefix="/api")
 app.include_router(payment_router, prefix="/api")
 app.include_router(password_reset_router,prefix="/api")
 app.include_router(currency_router,prefix="/api")
+app.include_router(promo_code_router,prefix="/api")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
