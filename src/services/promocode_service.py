@@ -99,10 +99,12 @@ async def apply_promo_to_cart(user_id: UUID, unique_code: str, db:AsyncSession, 
 async def finalize_promo_usage(user_id: UUID, redis, db: AsyncSession):
     redis_key = f"promo_applied:{user_id}"
     unique_code = await redis.get(redis_key)
+
     if not unique_code:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Promo is not applied")
     unique_code = json.loads(unique_code)
-    p_code = await repo_promocode.get_promo_code(p_code_unique=unique_code[0]["code"], db=db)
+
+    p_code = await repo_promocode.get_promo_code(p_code_unique=unique_code["code"], db=db)
     if not p_code:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Promo code not found")
 
@@ -114,7 +116,7 @@ async def finalize_promo_usage(user_id: UUID, redis, db: AsyncSession):
     await db.refresh(p_code)
 
     exists = await redis.exists(redis_key)
-    logger.info("Exists before delete:", exists)
+    logger.info(f"Exists before delete: {exists}")
     deleted = await redis.delete(redis_key)
-    logger.info("Deleted:", deleted)
+    logger.info(f"Deleted: {deleted}")
 
