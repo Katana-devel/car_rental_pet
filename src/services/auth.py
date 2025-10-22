@@ -13,7 +13,6 @@ from src.db.database import get_db
 from src.db.redis import get_redis
 from src.models.users import User
 from src.core.config import config
-from src.services.password_strength import validate_password
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/login")
 
@@ -64,6 +63,20 @@ class Auth:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials",
         )
+
+    def decode_google_id_token(self, token: str, expected_scope: Optional[str] = None):
+        try:
+            payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM], options={"verify_signature": False})
+            scope = payload.get("scope")
+            if scope != expected_scope:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid scope for token",
+                )
+            return payload
+        except Exception as e:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid Google id_token: {e}")
+
 
 
     async def create_access_token(self, data: dict):

@@ -68,12 +68,23 @@ class EmailConfig(Settings):
     MAIL_SERVER: str
     MAIL_FROM_NAME: str
 
+
+class GoogleOID(Settings):
+    CLIENT_ID:str
+    CLIENT_SECRET:str
+    GOOGLE_REDIRECT_URL:str
+    GOOGLE_TOKEN_URL: str
+
+
+
 admin_config = AdminConfig()
 db_config = DBConfig()
 jwt_config = JWTConfig()
 redis_config = RedisConfig()
 rabbitmq_config = RabbitMQConfig()
 email_config = EmailConfig()
+google_oid_config = GoogleOID()
+
 
 # cloudinary_config = CloudinaryConfig()
 print(f"DBConfig: {db_config.DATABASE_URL}")
