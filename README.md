@@ -1,5 +1,111 @@
-# Vue 3 + Vite
+# Car Rental Pet (In Progress)
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+Pet project for demonstrating my knowledge and backend development skills.  
+Repository: [car_rental_pet](https://github.com/Katana-devel/car_rental_pet)
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+---
+
+## 🚀 Tech Stack
+
+- **Language & Framework:** Python, FastAPI  
+- **Database:** PostgreSQL, SQLAlchemy (Async)  
+- **Caching & Storage:** Redis  
+- **Message Broker:** RabbitMQ  
+- **Containerization:** Docker  (docker-compose)
+- **Version Control:** Git  
+- **Dependency Management:** Poetry  
+
+---
+
+## ⚙️ Features
+
+### Implemented
+- **Car Rental Backend**
+  - Shopping cart with Redis as in-memory storage  
+  - Dynamic price calculator  
+  - Booking system: car availability tracking, collision protection, order statuses  
+  - Change history processing via APScheduler 
+  - Customer profiles
+  - Payment system logic integration  
+  - Booking history
+  - Notifications & email sending
+  - Multi-currency support
+  - Promo codes and discounts
+
+- **Authentication & Authorization**
+  - JWT tokens (access, refresh, email)  
+  - Redis-based token storage  
+  - Role separation: Admin / User  
+
+- **Architecture**
+  - Modular structure with models, CRUD layer, services  
+  - Async SQLAlchemy integration  
+  - Configurable via `.env`  
+  - Containerized with Docker-compose
+
+---
+
+## Project structure
+```bash
+.
+├── src/
+│   ├── db/                  # Connecting to databases, declarative_base
+│   ├── api/                 # Routers
+│   ├── models/              # ORM models
+│   ├── schemas/             # Pydantic Schemes
+│   ├── repository/          # Logic of access to the database
+│   ├── services/            # Business logic
+│   └── core/                # Configurations, logging
+├── tests/                   # Unit tests
+├── main.py                  # FastAPI entry point
+├── .env                     # Configuration
+├── .env.example             # Configuration template
+├── pyproject.toml           # Poetry configuration
+├── CONTRIBUTING.md          # Instructions for making changes to the project
+└── README.md                # Main project documentation
+```
+
+## 📌 Roadmap
+
+Planned functionality:  
+-  Recomendations
+-  Google OpenID Connect authorization
+-  Tests
+-  Deploy
+
+---
+
+## 🔧 Installation & Run
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Katana-devel/car_rental_pet.git
+   cd car_rental_pet
+
+2. 	**Install dependencies**
+poetry install
+
+3. **Apply migrations**
+alembic upgrade head
+
+4.	Configure environment
+	•	Copy .env.example → .env
+	•	Set up DB, Redis, RabbitMQ credentials
+5.	Run server
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+API Documentation
+
+Swagger UI:
+http://localhost:8000/docs
+
+All development done by me, from scratch.
+GitHub: [Katana-devel](https://github.com/Katana-devel)
+
+
+
+
+
+
+
+
