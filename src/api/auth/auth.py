@@ -1,14 +1,20 @@
-from fastapi import APIRouter, HTTPException, Depends, Request, status, BackgroundTasks
+from typing import Annotated
+
+from fastapi import APIRouter, HTTPException, Depends, status, Body
 from fastapi.security import OAuth2PasswordRequestForm, HTTPAuthorizationCredentials, HTTPBearer
+from fastapi.responses import RedirectResponse
 from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.config.google_oid_config import google_auth
 from src.db.database import get_db
 from src.repository import user as repositories_users
 from src.schemas.user import UserCreationSchema, TokenSchema, UserResponseSchema
 from src.services.auth import auth_service
+from src.services.google_oid.google_oid import generate_user_url
 from src.services.password_strength import validate_password as password_strength
 from src.services.messages import message_sub_producer
+
 
 
 auth_router = APIRouter(prefix='/auth', tags=['auth'])
@@ -98,3 +104,35 @@ async def request_email(email: EmailStr, db: AsyncSession = Depends(get_db)):
             "http://localhost:8000"        )
 
     return {"message": "Check your email for confirmation."}
+
+
+@auth_router.get("/google/callback")
+async def google_auth_callback(code: str, db: AsyncSession = Depends(get_db)):
+    tokens = await google_auth.exchange_code_for_token(code)
+    id_token = tokens.get("id_token")
+
+    if not id_token:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Google token response missing id_token")
+
+    user_data = await auth_service.decode_google_id_token(token=id_token)
+    user_email = user_data["email"]
+
+    user = await repositories_users.get_user_by_email(email=user_email, db=db)
+
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Signup first!")
+
+    if not user.is_confirmed:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Email unconfirmed")
+
+    access_token = await auth_service.create_access_token(data={"sub": user_email})
+    refresh_token = await auth_service.create_refresh_token(data={"sub": user_email})
+    await repositories_users.update_token(user, refresh_token, db)
+
+    return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer",
+            "user": {"email": user_email, "name": user_data.get("name"), "picture": user_data.get("picture")}}
+
+@auth_router.get('/google/url', status_code=status.HTTP_201_CREATED)
+async def get_google_auth_redirect():
+    url = await generate_user_url()
+    return RedirectResponse(url=url, status_code=status.HTTP_302_FOUND)
