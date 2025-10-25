@@ -150,5 +150,14 @@ async def password_reset(new_password: str,user_id: UUID, db: AsyncSession):
         return user
     return None
 
-# async def ban_user(user: User, db: AsyncSession):
-    # ... # through user is_active (do not nessesary now)
+
+async def create_google_oid_user(user_name: str, user_email: EmailStr, db: AsyncSession):
+    user = User(
+        full_name=user_name,
+        email=user_email,
+        is_confirmed=True
+    )
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return user

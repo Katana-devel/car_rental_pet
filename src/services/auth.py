@@ -2,12 +2,14 @@ from datetime import datetime, timedelta, timezone
 import pickle
 from typing import Any, Coroutine, Optional
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, requests
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 from jose import JWTError, jwt
 from redis.asyncio import Redis
+from google.oauth2 import id_token
+from google.auth.transport import requests
 
 from src.db.database import get_db
 from src.db.redis import get_redis
@@ -50,7 +52,8 @@ class Auth:
 
     def _decode_token(self, token: str, expected_scope: Optional[str] = None) -> dict:
         try:
-            payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM])
+            payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM],
+                                 options={"verify_signature": False})
             scope = payload.get("scope")
             if scope != expected_scope:
                     raise HTTPException(
@@ -64,19 +67,19 @@ class Auth:
                 detail="Could not validate credentials",
         )
 
-    def decode_google_id_token(self, token: str, expected_scope: Optional[str] = None):
+    async def decode_google_id_token(self, token: str) -> dict:
         try:
-            payload = jwt.decode(token, self.SECRET_KEY, algorithms=[self.ALGORITHM], options={"verify_signature": False})
-            scope = payload.get("scope")
-            if scope != expected_scope:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid scope for token",
-                )
+            payload = id_token.verify_oauth2_token(
+                token,
+                requests.Request(),
+                config.google_oid_config.CLIENT_ID
+            )
             return payload
-        except Exception as e:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"Invalid Google id_token: {e}")
-
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"Invalid Google ID token: {e}"
+            )
 
 
     async def create_access_token(self, data: dict):
