@@ -28,11 +28,11 @@ class User(Base):
         UUID(as_uuid=True), primary_key=True, server_default=text("gen_random_uuid()")
     )
     full_name: Mapped[str] = mapped_column(String(100), nullable=False)
-    password: Mapped[str] = mapped_column(String(100),  nullable=False)
+    password: Mapped[str] = mapped_column(String(100),  nullable=True)
     gender: Mapped[str] = mapped_column("gender", Enum(Gender), nullable=True)
     email: Mapped[Optional[EmailStr]] = mapped_column(String(100), nullable=True, unique=True)
     number: Mapped[Optional[str]] = mapped_column(String(25), nullable=True, unique=True)
-    age: Mapped[Optional[int]] = mapped_column(nullable=True) #TODO: Verify with passport
+    age: Mapped[Optional[int]] = mapped_column(nullable=True)
     address: Mapped[str] = mapped_column(String(150), nullable=True)
     currency: Mapped[str] = mapped_column(String(255), nullable=True, default="usd")
     role: Mapped[Enum] = mapped_column("role", Enum(Role), nullable=False, default=Role.user)
@@ -56,8 +56,3 @@ class User(Base):
         "Payment",
         back_populates="user"
     )
-
-
-
-    #TODO: Make check if user inputs email -  email column, if number - number column
-    #Make proper validation form  for number +380...
