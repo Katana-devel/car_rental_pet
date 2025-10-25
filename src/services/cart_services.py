@@ -12,22 +12,20 @@ from src.schemas.car import OptionsResponseSchema
 from src.schemas.cart import CartItem
 
 
-
-async def selected_options(car_data: CartItem , db: AsyncSession):
+async def selected_options(car_data: CartItem, db: AsyncSession):
     car = await repo_car.get_car(car_data.car_id, db)
     car_opt = car.options
     user_opt = car_data.options
     options = []
+
     for opt in car_opt:
         if opt.options.option_name in user_opt:
             options.append({
                 "option_name": opt.options.option_name,
                 "price": opt.options.price
             })
-            return options
-        else:
-            return []
-    return None
+
+    return options if options else []
 
 
 
