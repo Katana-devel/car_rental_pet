@@ -8,19 +8,7 @@ from src.core.logger import logger
 from src.core.config.base_config import BASE_DIR
 
 class DBConfig(Settings):
-    POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: int = 12348765
-    POSTGRES_DB: str = "PPJ1"
-    POSTGRES_HOST: str = "db"
-    POSTGRES_PORT: int = 5432
-
-    @property
-    def DATABASE_URL(self) -> str:
-        return (
-            f"postgresql+asyncpg://{self.POSTGRES_USER}:"
-            f"{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:"
-            f"{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
-        )
+    DATABASE_URL: str
     class Config:
         env_file = BASE_DIR / ".env"
         env_file_encoding = 'utf-8'
@@ -44,21 +32,30 @@ class AdminConfig(Settings):
 
 
 class RedisConfig(Settings):
-    REDIS_HOST: str = "redis"
-    REDIS_PORT: int = 6379
-    REDIS_PASSWORD: Optional[str] = None
+    REDIS_URL: str | None = None
+    REDIS_HOST: str = "localhost"  # Default fallback
+    REDIS_PORT: int = 6379  # Default fallback
+    REDIS_PASSWORD: str | None = None
     REDIS_DB: int = 0
 
-
-class RabbitMQConfig(Settings):
-    RABBITMQ_DEFAULT_USER: str
-    RABBITMQ_DEFAULT_PASS: str
-    RABBITMQ_HOST: str = "rabbitmq"
-    RABBITMQ_PORT:int = 5672
+    class Config:
+        env_file = BASE_DIR / ".env"
+        env_file_encoding = 'utf-8'
 
     @property
+    def url(self):
+        if self.REDIS_URL:
+            return self.REDIS_URL
+        if self.REDIS_PASSWORD:
+            return f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+
+class RabbitMQConfig(Settings):
+    RABBITMQ_URL: str | None = None
+    @property
     def AMQP_URL(self) -> str:
-        return f"amqp://{self.RABBITMQ_DEFAULT_USER}:{self.RABBITMQ_DEFAULT_PASS}@{self.RABBITMQ_HOST}:{self.RABBITMQ_PORT}/"
+        return self.RABBITMQ_URL
+
 
 class EmailConfig(Settings):
     MAIL_USERNAME: str
@@ -86,6 +83,4 @@ email_config = EmailConfig()
 google_oid_config = GoogleOID()
 
 
-# cloudinary_config = CloudinaryConfig()
-print(f"DBConfig: {db_config.DATABASE_URL}")
 
