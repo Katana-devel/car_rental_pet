@@ -4,6 +4,7 @@ import json
 from sqlalchemy import UUID
 
 from src.core.config.config import rabbitmq_config
+from ssl_context_ingore import ssl_context_ignore
 
 exchange_name = "password_reset_exchange"
 queue_name = "password_reset_queue"
@@ -14,7 +15,7 @@ exchange = None
 
 async def setup():
     global connection, channel, exchange
-    connection = await aio_pika.connect_robust(rabbitmq_config.AMQP_URL)
+    connection = await aio_pika.connect_robust(rabbitmq_config.AMQP_URL, ssl_context=ssl_context_ignore())
     channel = await connection.channel()
     exchange = await channel.declare_exchange(exchange_name, aio_pika.ExchangeType.DIRECT)
     queue = await channel.declare_queue(name=queue_name, durable=True)
