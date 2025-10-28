@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta, timezone
-import pickle
+import json
 from typing import Any, Coroutine, Optional
+from uuid import UUID
 
-from fastapi import Depends, HTTPException, status, requests
+from fastapi import Depends, HTTPException, status
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,14 +31,11 @@ class Auth:
         self.EMAIL_TOKEN_EXPIRE_DAYS = config.jwt_config.EMAIL_TOKEN_EXPIRE_DAYS
         self.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES = config.jwt_config.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES
 
-
     def verify_password(self, plain_password, hashed_password):
         return self.pwd_context.verify(plain_password, hashed_password)
 
-
     def get_password_hash(self, password):
         return self.pwd_context.hash(password)
-
 
     def _create_token(self, data: dict, expires_delta: Optional[timedelta], scope: str):
         to_encode = data.copy()
@@ -46,9 +44,8 @@ class Auth:
         else:
             expire = datetime.now(timezone.utc) + timedelta(minutes=30)
         to_encode.update({"exp": expire, "scope": scope})
-        encoded_jwt = jwt.encode(to_encode,self.SECRET_KEY, algorithm=self.ALGORITHM)
+        encoded_jwt = jwt.encode(to_encode, self.SECRET_KEY, algorithm=self.ALGORITHM)
         return encoded_jwt
-
 
     def _decode_token(self, token: str, expected_scope: Optional[str] = None) -> dict:
         try:
@@ -56,7 +53,7 @@ class Auth:
                                  options={"verify_signature": False})
             scope = payload.get("scope")
             if scope != expected_scope:
-                    raise HTTPException(
+                raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid scope for token",
                 )
@@ -65,7 +62,7 @@ class Auth:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials",
-        )
+            )
 
     async def decode_google_id_token(self, token: str) -> dict:
         try:
@@ -81,44 +78,70 @@ class Auth:
                 detail=f"Invalid Google ID token: {e}"
             )
 
-
     async def create_access_token(self, data: dict):
-        scope= "access_token"
+        scope = "access_token"
         return self._create_token(data, expires_delta=timedelta(minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES), scope=scope)
-
 
     async def create_refresh_token(self, data: dict):
         scope = "refresh_token"
         return self._create_token(data=data, expires_delta=timedelta(days=self.REFRESH_TOKEN_EXPIRE_DAYS), scope=scope)
 
-
     async def create_email_token(self, data: dict):
-        scope="email_token"
+        scope = "email_token"
         return self._create_token(data=data, expires_delta=timedelta(minutes=self.EMAIL_TOKEN_EXPIRE_DAYS), scope=scope)
-
 
     async def decode_email_token(self, token: str) -> dict:
         payload = self._decode_token(token=token, expected_scope="email_token")
         return payload
 
-
     async def decode_refresh_token(self, refresh_token: str) -> dict:
-        payload =  self._decode_token(token=refresh_token, expected_scope="refresh_token")
+        payload = self._decode_token(token=refresh_token, expected_scope="refresh_token")
         return payload
 
-
     async def create_password_reset_token(self, data: dict):
-        scope="password_reset_token"
-        return self._create_token(data=data, expires_delta=timedelta(minutes=self.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES), scope=scope)
-
+        scope = "password_reset_token"
+        return self._create_token(data=data, expires_delta=timedelta(minutes=self.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES),
+                                  scope=scope)
 
     async def decode_password_reset_token(self, token: str) -> dict:
         payload = self._decode_token(token=token, expected_scope="password_reset_token")
         return payload
 
+    def _user_to_dict(self, user: User) -> dict:
+        """Convert User object to JSON-serializable dict"""
+        return {
+            "id": str(user.id),
+            "full_name": user.full_name,
+            "email": user.email,
+            "gender": user.gender,
+            "number": user.number,
+            "age": user.age,
+            "address": user.address,
+            "currency": user.currency,
+            "role": user.role,
+            "is_confirmed": user.is_confirmed,
+            "is_active": user.is_active,
+        }
+
+    def _dict_to_user(self, user_dict: dict) -> User:
+        """Convert dict back to User object"""
+        user = User()
+        user.id = UUID(user_dict["id"])
+        user.full_name = user_dict["full_name"]
+        user.email = user_dict["email"]
+        user.gender = user_dict.get("gender")
+        user.number = user_dict.get("number")
+        user.age = user_dict.get("age")
+        user.address = user_dict.get("address")
+        user.currency = user_dict.get("currency")
+        user.role = user_dict["role"]
+        user.is_confirmed = user_dict["is_confirmed"]
+        user.is_active = user_dict["is_active"]
+        return user
 
     async def authenticate_user(
-        self, token: str= Depends(oauth2_scheme) , db: AsyncSession = Depends(get_db), redis: Redis = Depends(get_redis)
+            self, token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db),
+            redis: Redis = Depends(get_redis)
     ) -> Coroutine[Any, Any, User]:
         credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -135,16 +158,25 @@ class Auth:
                 raise credentials_exception
         except JWTError:
             raise credentials_exception
-        user = await redis.get(f"user:{email}")
-        if user is None:
+
+        # Try to get user from Redis cache
+        user_json = await redis.get(f"user:{email}")
+
+        if user_json is None:
+            # User not in cache, fetch from database
             from src.repository.user import get_user_by_email
             user = await get_user_by_email(email, db)
             if user is None:
                 raise credentials_exception
-            await redis.set(f"user:{email}", pickle.dumps(user))
-            await redis.expire(f"user:{email}", int(900))
+
+            # Store user in Redis as JSON
+            user_dict = self._user_to_dict(user)
+            await redis.set(f"user:{email}", json.dumps(user_dict))
+            await redis.expire(f"user:{email}", 900)
         else:
-            user = pickle.loads(user)
+            # User found in cache, deserialize from JSON
+            user_dict = json.loads(user_json)
+            user = self._dict_to_user(user_dict)
 
         return user
 
