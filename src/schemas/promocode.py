@@ -7,7 +7,7 @@ from src.models.promocodes import DiscountType
 
 
 class CreatePromoCodeSchema(BaseModel):
-    unique_code: Optional[str]
+    unique_code: Optional[str] = None
     discount_type: DiscountType
     discount: int
     expires_at: datetime
