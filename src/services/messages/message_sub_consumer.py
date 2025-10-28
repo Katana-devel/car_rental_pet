@@ -1,6 +1,8 @@
 import asyncio
 import json
 import aio_pika
+
+from ssl_context_ingore import ssl_context_ignore
 from src.core.config.config import rabbitmq_config
 from src.services.messages.email import send_confirmation_email
 
@@ -8,7 +10,7 @@ exchange_name = "email_confirmation_exchange"
 queue_name = "email_confirmation_queue"
 
 async def setup():
-    connection = await aio_pika.connect_robust(rabbitmq_config.AMQP_URL)
+    connection = await aio_pika.connect_robust(rabbitmq_config.AMQP_URL, ssl_context=ssl_context_ignore())
     channel = await connection.channel()
     await channel.set_qos(prefetch_count=1)
 
