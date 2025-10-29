@@ -1,4 +1,5 @@
 import asyncio
+import ssl
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
@@ -33,7 +34,7 @@ from src.services.messages.message_sub_producer import setup as email_msg_setup
 from src.services.messages.message_sub_consumer import setup as cons_email_msg_setup
 from src.services.messages.message_sub_consumer import main as cons_email_msg_main
 from tests.email_messages_test import test_email
-
+from ssl_context_ingore import ssl_context_ignore
 
 
 scheduler = AsyncIOScheduler()
@@ -48,7 +49,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     async with redis_manager.session() as redis:
         await FastAPILimiter.init(redis)
 
-    app.state.rabbitmq_conn = await aio_pika.connect_robust(rabbitmq_config.AMQP_URL)
+    app.state.rabbitmq_conn = await aio_pika.connect_robust(rabbitmq_config.RABBITMQ_URL,
+                                                            ssl_context=ssl_context_ignore())
     app.state.rabbitmq_channel = await app.state.rabbitmq_conn.channel()
 
     await email_msg_setup()

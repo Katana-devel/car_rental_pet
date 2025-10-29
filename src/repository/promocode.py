@@ -1,11 +1,15 @@
+import random
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.schemas.promocode import CreatePromoCodeSchema
-from src.models.promocodes import PromoCode
+from src.models.promocodes import PromoCode, generate_code
 
 
 async def create_promo_code(p_code_data: CreatePromoCodeSchema, db: AsyncSession):
+    if p_code_data.unique_code is None:
+        p_code_data.unique_code = generate_code(random.randint(6, 8))
     p_code = PromoCode(**p_code_data.model_dump())
     db.add(p_code)
     await db.commit()
