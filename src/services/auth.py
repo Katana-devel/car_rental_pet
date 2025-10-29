@@ -3,7 +3,7 @@ import json
 from typing import Any, Coroutine, Optional
 from uuid import UUID
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, requests
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -138,6 +138,16 @@ class Auth:
         user.is_confirmed = user_dict["is_confirmed"]
         user.is_active = user_dict["is_active"]
         return user
+
+    async def create_password_reset_token(self, data: dict):
+        scope="password_reset_token"
+        return self._create_token(data=data, expires_delta=timedelta(minutes=self.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES), scope=scope)
+
+
+    async def decode_password_reset_token(self, token: str) -> dict:
+        payload = self._decode_token(token=token, expected_scope="password_reset_token")
+        return payload
+
 
     async def authenticate_user(
             self, token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db),
