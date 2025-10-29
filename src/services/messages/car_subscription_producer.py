@@ -1,7 +1,7 @@
 import aio_pika
 import json
 from src.core.config.config import rabbitmq_config
-from ssl_context_ingore import ssl_context_ignore
+from ssl_context_ignore import ssl_context_ignore
 
 exchange_name = "email_confirmation_exchange"
 queue_name = "email_confirmation_queue"
