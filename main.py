@@ -34,7 +34,7 @@ from src.services.messages.message_sub_producer import setup as email_msg_setup
 from src.services.messages.message_sub_consumer import setup as cons_email_msg_setup
 from src.services.messages.message_sub_consumer import main as cons_email_msg_main
 from tests.email_messages_test import test_email
-from ssl_context_ingore import ssl_context_ignore
+from ssl_context_ignore import ssl_context_ignore
 
 
 scheduler = AsyncIOScheduler()
