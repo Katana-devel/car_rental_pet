@@ -1,4 +1,4 @@
-# Car Rental Pet (In Progress)
+# Car Rental Pet 
 
 Pet project for demonstrating my knowledge and backend development skills.  
 Repository: [car_rental_pet](https://github.com/Katana-devel/car_rental_pet)
@@ -31,6 +31,8 @@ Repository: [car_rental_pet](https://github.com/Katana-devel/car_rental_pet)
   - Notifications & email sending
   - Multi-currency support
   - Promo codes and discounts
+  - Google OpenID Connect authorization
+  - Deploy
 
 - **Authentication & Authorization**
   - JWT tokens (access, refresh, email)  
@@ -64,14 +66,6 @@ Repository: [car_rental_pet](https://github.com/Katana-devel/car_rental_pet)
 ├── CONTRIBUTING.md          # Instructions for making changes to the project
 └── README.md                # Main project documentation
 ```
-
-## 📌 Roadmap
-
-Planned functionality:  
--  Recomendations
--  Google OpenID Connect authorization
--  Tests
--  Deploy
 
 ---
 
